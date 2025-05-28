@@ -1,0 +1,85 @@
+module AssetCore
+  module Models
+    module Decorators
+      module AssetStateReference
+
+        def self.included(base)
+          extend ClassMethods
+        end
+
+        def self.default_options
+          {
+            number: :id,
+            description: nil,
+            data: {},
+            sync_data: 'none', # options are none, async, syncsync_data
+          }
+        end
+
+        module ClassMethods
+
+          def asset_state_reference *args, &block
+            return unless ActiveRecord::Base.connection.table_exists?('asset_core_states')
+            opts = args.extract_options!
+            opts = AssetCore::Models::Decorators::AssetStateReference.default_options.merge(opts)
+
+            ::Plugins::Models::Concerns::Config.setup(self, 'asset_state_reference_config', opts, &block)
+
+            unless reflect_on_association(:asset_states)
+              has_many :asset_states, class_name: "AssetCore::State", as: :reference
+              has_many :approved_states, -> { where(state: 'approved').where.not(effective_at: nil) }, class_name: "AssetCore::State", as: :reference, extend: Extensions::DataSync
+
+              AssetCore::State.subclasses.each do |sub|
+                has_many "approved_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
+                has_one "approved_#{sub.state_name}_state".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
+                has_many "future_approved_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at > ?". DateTime.now) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
+              end
+
+              AssetCore::State.include Plugins::Models::Concerns::PolymorphicAlternative unless AssetCore::State.include?(Plugins::Models::Concerns::PolymorphicAlternative)
+              assoc_name = "asset_state_reference_of_#{self.base_class.name.demodulize.underscore}"
+              AssetCore::State.define_alternative_polyorphic_parent_association assoc: :reference, new_assoc: assoc_name, base_class: self.base_class
+            end
+
+            include InstanceMethods unless include?(InstanceMethods)
+            include SyncCallbacks unless include?(SyncCallbacks)
+
+          end
+
+        end
+
+        module InstanceMethods
+
+          def asset_state_reference_data(*args)
+            aasset_state_refeference.data(*args)
+          end
+
+          def asset_state_reference_sync_data
+            AssetCore::State.subclasses.each do |sub|
+              assoc = "approved_#{sub.entry_name}_state".to_sym
+              send(assoc).data_sync(self) if respond_to?(:assoc)
+              assoc = "future_approved_#{sub.entry_name}_states".to_sym
+              send(assoc).data_sync(self) if respond_to?(assoc)
+            end
+          end
+
+        end
+
+        module SyncCallbacks
+          extend ActiveSupport::Concern
+
+          included do
+            after_commit if: proc { |record| asset_state_reference_config.sync != 'none' } do
+              if asset_state_reference_config.sync == 'sync'
+                asset_state_reference_sync_data
+              elsif asset_state_reference_config.sync == 'async'
+                AssetCore::StateReferenceWorker.perform_at(DateTime.now, nil, 'data_sync', *[self.class.name, self.id])
+              end
+            end
+          end
+
+        end
+
+      end
+    end
+  end
+end
