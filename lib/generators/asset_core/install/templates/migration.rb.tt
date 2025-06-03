@@ -5,7 +5,7 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       #relationships
       t.references :asset, polymorphic: true, index: true
       t.references :model, index: true
-      t.references :organization, polymorphic: true, index: true
+      t.references :owner, polymorphic: true, index: true
       t.references :parent, index: true
       t.references :manufacturer, polymorphic: true, index: true
 
@@ -95,8 +95,7 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.references :reference, polymorphic: true, index: true
       t.references :action, polymorphic: true, index: true
 
-      t.string :name
-      t.string :label
+      t.integer :index
 
       t.string :state
       t.datetime :rejected_at

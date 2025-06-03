@@ -20,7 +20,7 @@ module AssetCore
             tag_number_prefix: nil,
             tag_number_suffix: nil,
             sync_data: 'sync', # options are none, async, sync
-            defaults: ::Plugins::Models::Config.new({currency: nil, manufacture: nil, organization: nil, entry_use_reference_data: false, state_use_reference_data: false}),
+            defaults: ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
             available_entries: proc { ::AssetCore::Record.find_by_asset_type(asset_config.asset_type).available_entries },
             available_states: proc { ::AssetCore::Record.find_by_asset_type(asset_config.asset_type).available_states },
             entries: ::Plugins::Models::Concerns::Config.new(::AssetCore::Entry.subclasses.inject({}) do |hash, entry_class|

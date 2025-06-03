@@ -3,36 +3,22 @@ module AssetCore
 
     custom_attributes_definition :data, Attributes
 
-    STATES = {
-      "owned"       => true,
-      "leased_in"   => false,
-      "leased_out"  => true,
-      "rented_in"   => false,
-      "rented_out"  => true,
-      "loaned_in"   => false,
-      "loaned_out"  => true,
-      "mortgage_in" => true,
-      "mortgage_out"=> false
-    }
+    self.states_list = [
+      { name: "owned",        label: "Owned",        owned: true, default: true  },
+      { name: "leased_in",    label: "Leased In",    owned: false },
+      { name: "leased_out",   label: "Leased Out",   owned: true  },
+      { name: "rented_in",    label: "Rented In",    owned: false },
+      { name: "rented_out",   label: "Rented Out",   owned: true  },
+      { name: "loaned_in",    label: "Loaned In",    owned: false },
+      { name: "loaned_out",   label: "Loaned Out",   owned: true  },
+      { name: "mortgage_in",  label: "Mortgage In",  owned: true  },
+      { name: "mortgage_out", label: "Mortgage Out", owned: false },
+      { name: "released",     label: "Released",     owned: false }
+    ]
 
-    def self.asset_record_state_config
-      opts = {
-        state_list: STATES,
-        default_state: "owned"
-      }
-      ::Plugins::Models::Concerns::Config.new(opts)
-    end
-
-    validates :state, presence: true, inclusion: { in: states_list }
-    validate do
-      if reference
-        errors.add(:state, :invalid) unless record.class.include?(::AssetCore.decorators.asset_state_reference)
-      end
-    end
-
-    def states_list
-      if record
-        record.asset.asset_config.states.ownerships.states_list || STATES
+    before_save do
+      if state_value[:owned]
+        self.data.owned = true
       end
     end
 

@@ -6,12 +6,15 @@ require 'grape'
 require 'grape-entity'
 require 'validates_timeliness'
 require 'aasm'
+require 'hashdiff'
+require 'closure_tree'
 
 module AssetCore
 
   autoload :Configuration, "asset_core/configuration"
   autoload :Controllers, "asset_core/controllers"
   autoload :Models, "asset_core/models"
+  autoload :AssetScopes, "asset_core/asset_scopes"
   autoload :Grape, "asset_core/grape"
   autoload :Errors, "asset_core/errors"
 

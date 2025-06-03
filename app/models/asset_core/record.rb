@@ -8,7 +8,7 @@ module AssetCore
 
     has_closure_tree hierarchy_table_name: 'asset_core_record_hierarchies', dependent: :destroy
 
-    belongs_to :organization, polymorphic: true, optional: true
+    belongs_to :owner, polymorphic: true, optional: true
     belongs_to :manufacture, polymorphic: true, optional: true
     belongs_to :asset, polymorphic: true
     belongs_to :model, class_name: "AssetCore::Model", optional: true
@@ -22,7 +22,7 @@ module AssetCore
       if asset.class.include?(::AssetCore.decorators.asset_methods)
         self.name ||= ref.asset_config_name
         self.description ||= ref.asset_config_description
-        self.organization ||= asset.asset_config.defaults.organization
+        self.owner ||= asset.asset_config.defaults.owner
         self.number ||= asset.asset_config_number_generator
         self.tag_number ||=  asset.asset_config_tag_number_generator
         self.number = "#{asset.asset_config_number_prefix}#{self.number}#{asset.asset_config_number_suffix}"
@@ -71,16 +71,6 @@ module AssetCore
       if ref.asset_config_name != name || ref.asset_config_description != description
         update name: ref.asset_config_name, description: ref.asset_config_description
       end
-    end
-
-    def default_data
-      hash = {}
-      if record
-        hash[:currency] = record.asset_config_defaults.currency
-        hash[:entry_use_reference_data] = record.asset_config_defaults.entry_use_reference_data
-        hash[:manufacture]= record.asset_config_defaults.manufacture
-      end
-      hash
     end
 
   end

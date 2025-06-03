@@ -9,7 +9,6 @@ module AssetCore
 
         def self.default_options
           {
-            number: :id,
             description: nil,
             data: {},
             sync_data: 'none', # options are none, async, sync
@@ -29,10 +28,16 @@ module AssetCore
               has_many :asset_entries, class_name: "AssetCore::Entry", as: :reference
               has_many :approved_entries, -> { where(state: 'approved').where.not(effective_at: nil) }, class_name: "AssetCore::Entry", as: :reference, extend: Extensions::DataSync
 
+              accepts_nested_attributes_for :asset_entries, allow_destroy: true
+
               AssetCore::Entry.subclasses.each do |sub|
+                has_many "asset_#{sub.entry_name}_entries".to_sym, class_name: sub.name, as: :reference
                 has_many "approved_#{sub.entry_name}_entries".to_sym, -> { where(state: 'approved').where.not(effective_at: nil) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
                 has_one "approved_#{sub.entry_name}_entry".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
                 has_many "future_approved_#{sub.entry_name}_entries".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at > ?". DateTime.now) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
+
+                accepts_nested_attributes_for "asset_#{sub.entry_name}_entries".to_sym, allow_destroy: true
+
               end
 
               AssetCore::Entry.include Plugins::Models::Concerns::PolymorphicAlternative unless AssetCore::Entry.include?(Plugins::Models::Concerns::PolymorphicAlternative)

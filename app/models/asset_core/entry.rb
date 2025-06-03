@@ -1,4 +1,5 @@
 require 'securerandom'
+require 'hashdiff'
 
 module AssetCore
   class Entry < AssetCore.config.application_record_base_constant
@@ -7,10 +8,15 @@ module AssetCore
 
     custom_attributes_definition :data, ::AssetCore::Attributes
 
+    asset_state_reference do
+      description :description
+    end
+
     self.table_name = 'asset_core_entries'
 
-    class_attribute :entry_name
+    class_attribute :entry_name, :entry_scopes
     self.entry_name = name.demodulize.underscore
+    self.entry_scopes = []
 
     belongs_to :record, class_name: "AssetCore::Record", foreign_key: :record_id, optional: true
     belongs_to :previous_entry, class_name: "AssetCore::Entry", foreign_key: :previous_entry_id, optional: true
@@ -29,13 +35,16 @@ module AssetCore
       end
     }
 
+    scope :by_entry_scopes, -> (*scopes) {
+      types = ::AssetCore::Entry.descendants.select{|sub| sub.included_in_scopes(*scopes) }.map(&:name)
+      where(type: types)
+    }
+
     scope :effective_before, -> (time) {
       where("effective_at <= ?", time)
     }
 
-    before_validation on: :create do
-      self.number ||= generate_number
-    end
+    before_validation :set_attributes_before_validation_on_create, on: :create
 
     validate do
       if reference
@@ -43,20 +52,100 @@ module AssetCore
       end
     end
 
+    after_save do
+      if state == "approved" && saved_change_to_state?
+        if record && record.asset
+          record.asset.asset_config.entries.send(self.class.entry_name).after_entry_is_approved(self)
+        end
+      end
+      if state == "rejected" && saved_change_to_state?
+        record.asset.asset_config.entries.send(self.class.entry_name).after_entry_is_rejected(self)
+      end
+    end
+
+    def after_entry_is_approved
+      raise "Must be implemented"
+    end
+
+    def after_entry_is_rejected
+      raise "Must be implemented"
+    end
+
+    def set_attributes_before_validation_on_create
+      self.number ||= default_attributes_values[:number]
+      self.number ||= generate_number
+      self.description ||= default_attributes_values[:description]
+      self.use_reference_data ||= default_attributes_values[:use_reference_data]
+      if use_reference_data
+        data_use_reference_data
+      else
+        data_use_default_attributes_values_data
+      end
+    end
+
     def self.inherited(subclass)
       super(subclass)
       subclass.entry_name= subclass.name.demodulize.underscore
+      subclass.entry_scopes = entry_scopes.dup
       AssetCore::Record.define_entry_relation(subclass)
     end
 
+    def self.included_in_scopes(*scopes)
+      scopes.any? { |scp| entry_scopes.map(&:to_s).include?(scp.to_s)  }
+    end
+
     def self.asset_record_entry_config
-      ::Plugins::Models::Concerns::Config.new({})
+      data_opts = attribute_types["data"].model_klass.assignable_attributes.inject({}) do |hash, att|
+        hash[att.to_sym] = nil
+        hash
+      end
+      opts = {
+        number: nil,
+        description: nil,
+        use_reference_data: nil,
+        after_entry_is_approved: proc {|entry|
+          entry.after_entry_is_approved
+        },
+        after_entry_is_rejected: proc {|entry|
+          entry.after_entry_is_rejected
+        },
+        data: ::Plugins::Models::Concerns::Config.new(data_opts)
+      }
+      ::Plugins::Models::Concerns::Config.new(opts)
     end
 
     def self.find_by_entry_name(name)
       sub = subclasses.select{|sub| sub.entry_name.to_s == name.to_s}[0]
       raise ArgumentError, "Entry name '#{name}' not found" unless sub
       sub
+    end
+
+    def default_attributes_values
+      return @default_attributes_values if @default_attributes_values
+      hash = {}
+      if record
+        hash[:use_reference_data] = record.asset_config_defaults.entry_use_reference_data
+        hash[:manufacture]= record.asset_config_defaults.manufacture
+        hash[:owner] = record.asset_config_defaults.owner
+        hash[:currency] = record.asset_config_defaults.currency
+        hash[:data] = {}
+        unless self.class.superclass == AssetCore.config.application_record_base_constant
+          entry_name = self.class.entry_name
+          hash[:number] = record.asset.asset_config.entries.send(entry_name).number
+          hash[:description] = record.asset.asset_config.entries.send(entry_name).description
+          unless record.asset.asset_config.entries.send(entry_name).use_reference_data.nil?
+            hash[:use_reference_data] = record.asset.asset_config.entries.send(entry_name).use_reference_data
+          end
+          data_class =  AssetCore::Entry.attribute_types['data'].model_klass
+          data_class.assignable_attributes.each do |att|
+            hash[:data][att.to_sym] = record.asset.asset_config.entries.send(entry_name).data.send(att)
+            if att.to_sym == :currency
+              hash[:data][att.to_sym] ||= hash[:currency]
+            end
+          end
+        end
+      end
+      @default_attributes_values = hash
     end
 
     def data_sync(ref)
@@ -106,6 +195,36 @@ module AssetCore
 
     def generate_number
       SecureRandom.hex(8)
+    end
+
+    def data_use_reference_data(ref=nil)
+      ref ||= reference
+      if ref.class.include?(::AssetCore.decorators.asset_entry_reference_methods)
+        ref_data = ref.asset_entry_reference_config.data
+        self.data.class.assignable_attributes.each do |att|
+          self.data.send("#{att}=", ref_data[att.to_sym])
+        end
+        self.data
+      end
+    end
+
+    def data_use_reference_data!(ref=nil)
+      save if data_use_reference_data
+    end
+
+    def data_use_default_attributes_values_data
+      _data = default_attributes_values[:data]
+      self.data.class.assignable_attributes.each do |att|
+        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
+      end
+    end
+
+    def data_sync(ref)
+      atts = data.class.assignable_attributes.symbolize_keys
+      ref_data = ref.asset_entry_reference_config.data.symbolize_keys.slice(*atts.keys)
+      unless Hashdiff.diff(atts, ref_data).should == []
+        data_use_reference_data!(ref)
+      end
     end
 
   end
