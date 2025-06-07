@@ -9,10 +9,8 @@ module AssetCore
         cfg = ::AssetCore::AssetScopes.scopes.dup
         opts = {}
         cfg.keys.each do |key|
-          opts[key] = cfg.send(key).proxy.dup
+          opts[key] = cfg.send(key).proxy_methods.dup
         end
-
-        debugger
 
         cfg = cfg.class.new(values: opts)
 

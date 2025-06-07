@@ -23,6 +23,7 @@ Asset.acts_as_an_asset do
 end
 
 asset = Asset.create(owner: company, name: "Asset #1")
+asset.asset
 
 debugger
 

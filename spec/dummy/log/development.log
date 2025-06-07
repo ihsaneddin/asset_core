@@ -1100,3 +1100,233 @@ Migrating to CreateAssets (20250607165913)
   [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mBEGIN[0m
   [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 42], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 19:44:43.843014"], ["updated_at", "2025-06-07 19:44:43.843014"]]
   [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.5ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (2.8ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (1.6ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (1.5ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.4ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (1.5ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (1.8ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.3ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:12:12.045199"], ["updated_at", "2025-06-07 20:12:12.045199"]]
+  [1m[36mTRANSACTION (0.8ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.3ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 43], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:12:12.060168"], ["updated_at", "2025-06-07 20:12:12.060168"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.1ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 43], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.3ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 43], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:12:12.078882"], ["updated_at", "2025-06-07 20:12:12.078882"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAssetCore::Record::Generic Load (0.6ms)[0m  [1m[34mSELECT "asset_core_records".* FROM "asset_core_records" WHERE "asset_core_records"."type" = $1 AND "asset_core_records"."asset_id" = $2 AND "asset_core_records"."asset_type" = $3 LIMIT $4[0m  [["type", "AssetCore::Record::Generic"], ["asset_id", 17], ["asset_type", "Asset"], ["LIMIT", 1]]
+  ↳ (byebug):1:in `<top (required)>'
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (3.6ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.9ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (2.9ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.6ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:12:56.526063"], ["updated_at", "2025-06-07 20:12:56.526063"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 44], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:12:56.547958"], ["updated_at", "2025-06-07 20:12:56.547958"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 44], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 44], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:12:56.570578"], ["updated_at", "2025-06-07 20:12:56.570578"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAssetCore::Record::Generic Load (0.5ms)[0m  [1m[34mSELECT "asset_core_records".* FROM "asset_core_records" WHERE "asset_core_records"."type" = $1 AND "asset_core_records"."asset_id" = $2 AND "asset_core_records"."asset_type" = $3 LIMIT $4[0m  [["type", "AssetCore::Record::Generic"], ["asset_id", 18], ["asset_type", "Asset"], ["LIMIT", 1]]
+  ↳ (byebug):1:in `<top (required)>'
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.3ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (2.9ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.9ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.6ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.5ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.6ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:15:12.332027"], ["updated_at", "2025-06-07 20:15:12.332027"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 45], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:15:12.349484"], ["updated_at", "2025-06-07 20:15:12.349484"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 45], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 45], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:15:12.371010"], ["updated_at", "2025-06-07 20:15:12.371010"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAssetCore::Record::Generic Load (0.6ms)[0m  [1m[34mSELECT "asset_core_records".* FROM "asset_core_records" WHERE "asset_core_records"."type" = $1 AND "asset_core_records"."asset_id" = $2 AND "asset_core_records"."asset_type" = $3 LIMIT $4[0m  [["type", "AssetCore::Record::Generic"], ["asset_id", 19], ["asset_type", "Asset"], ["LIMIT", 1]]
+  ↳ (byebug):1:in `<top (required)>'
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (9.6ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.5ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.4ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:15:40.780833"], ["updated_at", "2025-06-07 20:15:40.780833"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 46], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:15:40.802626"], ["updated_at", "2025-06-07 20:15:40.802626"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 46], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 46], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:15:40.823845"], ["updated_at", "2025-06-07 20:15:40.823845"]]
+  [1m[36mTRANSACTION (1.0ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.3ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (3.8ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.1ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.9ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.5ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.5ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:18:57.235541"], ["updated_at", "2025-06-07 20:18:57.235541"]]
+  [1m[36mTRANSACTION (1.0ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 47], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:18:57.252875"], ["updated_at", "2025-06-07 20:18:57.252875"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 47], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 47], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:18:57.275222"], ["updated_at", "2025-06-07 20:18:57.275222"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (3.0ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.8ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (2.9ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (2.9ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (2.8ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.4ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:23:49.211778"], ["updated_at", "2025-06-07 20:23:49.211778"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 48], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:23:49.228293"], ["updated_at", "2025-06-07 20:23:49.228293"]]
+  [1m[36mTRANSACTION (3.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 48], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 48], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:23:49.304284"], ["updated_at", "2025-06-07 20:23:49.304284"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAssetCore::Record::Generic Load (0.5ms)[0m  [1m[34mSELECT "asset_core_records".* FROM "asset_core_records" WHERE "asset_core_records"."type" = $1 AND "asset_core_records"."asset_id" = $2 AND "asset_core_records"."asset_type" = $3 LIMIT $4[0m  [["type", "AssetCore::Record::Generic"], ["asset_id", 22], ["asset_type", "Asset"], ["LIMIT", 1]]
+  ↳ (byebug):1:in `<top (required)>'
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.5ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (3.8ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.5ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:28:00.520269"], ["updated_at", "2025-06-07 20:28:00.520269"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 49], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:28:00.537883"], ["updated_at", "2025-06-07 20:28:00.537883"]]
+  [1m[36mTRANSACTION (1.0ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 49], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 49], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:28:00.559661"], ["updated_at", "2025-06-07 20:28:00.559661"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (9.4ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.5ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.5ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.6ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:28:18.065416"], ["updated_at", "2025-06-07 20:28:18.065416"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.4ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 50], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:28:18.091961"], ["updated_at", "2025-06-07 20:28:18.091961"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 50], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.5ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 50], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:28:18.113167"], ["updated_at", "2025-06-07 20:28:18.113167"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.5ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (9.4ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.9ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.2ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.6ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.9ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:28:44.163133"], ["updated_at", "2025-06-07 20:28:44.163133"]]
+  [1m[36mTRANSACTION (1.0ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.5ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 51], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:28:44.188683"], ["updated_at", "2025-06-07 20:28:44.188683"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 51], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.4ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 51], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:28:44.211101"], ["updated_at", "2025-06-07 20:28:44.211101"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (8.7ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (1.7ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (1.7ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (1.5ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (2.1ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (1.6ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (1.8ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.4ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:29:34.930511"], ["updated_at", "2025-06-07 20:29:34.930511"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.3ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 52], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:29:34.946556"], ["updated_at", "2025-06-07 20:29:34.946556"]]
+  [1m[36mTRANSACTION (1.1ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.2ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 52], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.5ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 52], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:29:34.969597"], ["updated_at", "2025-06-07 20:29:34.969597"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAssetCore::Record::Generic Load (0.5ms)[0m  [1m[34mSELECT "asset_core_records".* FROM "asset_core_records" WHERE "asset_core_records"."type" = $1 AND "asset_core_records"."asset_id" = $2 AND "asset_core_records"."asset_type" = $3 LIMIT $4[0m  [["type", "AssetCore::Record::Generic"], ["asset_id", 26], ["asset_type", "Asset"], ["LIMIT", 1]]
+  [1m[36mActiveRecord::SchemaMigration Pluck (0.4ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC[0m
+  [1m[35m (3.4ms)[0m  [1m[35mTRUNCATE TABLE "organizations"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "addresses"[0m
+  [1m[35m (2.4ms)[0m  [1m[35mTRUNCATE TABLE "assets"[0m
+  [1m[35m (2.0ms)[0m  [1m[35mTRUNCATE TABLE "invoices"[0m
+  [1m[35m (3.8ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_records"[0m
+  [1m[35m (3.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entries"[0m
+  [1m[35m (3.4ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_states"[0m
+  [1m[35m (2.3ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_models"[0m
+  [1m[35m (2.7ms)[0m  [1m[35mTRUNCATE TABLE "asset_core_entry_items"[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mOrganization::Company Create (0.4ms)[0m  [1m[32mINSERT INTO "organizations" ("parent_id", "name", "contact_number", "type", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["parent_id", nil], ["name", "Company #1"], ["contact_number", nil], ["type", "Organization::Company"], ["created_at", "2025-06-07 20:30:35.077369"], ["updated_at", "2025-06-07 20:30:35.077369"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAddress Create (0.4ms)[0m  [1m[32mINSERT INTO "addresses" ("addressable_type", "addressable_id", "name", "latitude", "longitude", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "id"[0m  [["addressable_type", "Organization"], ["addressable_id", 53], ["name", "Bandung"], ["latitude", nil], ["longitude", nil], ["created_at", "2025-06-07 20:30:35.099304"], ["updated_at", "2025-06-07 20:30:35.099304"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAddress Load (0.1ms)[0m  [1m[34mSELECT "addresses".* FROM "addresses" WHERE "addresses"."addressable_id" = $1 AND "addresses"."addressable_type" = $2 LIMIT $3[0m  [["addressable_id", 53], ["addressable_type", "Organization"], ["LIMIT", 1]]
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN[0m
+  [1m[36mAsset Create (0.3ms)[0m  [1m[32mINSERT INTO "assets" ("owner_type", "owner_id", "name", "description", "created_at", "updated_at") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"[0m  [["owner_type", "Organization"], ["owner_id", 53], ["name", "Asset #1"], ["description", nil], ["created_at", "2025-06-07 20:30:35.118301"], ["updated_at", "2025-06-07 20:30:35.118301"]]
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mCOMMIT[0m
+  [1m[36mAssetCore::Record::Generic Load (0.4ms)[0m  [1m[34mSELECT "asset_core_records".* FROM "asset_core_records" WHERE "asset_core_records"."type" = $1 AND "asset_core_records"."asset_id" = $2 AND "asset_core_records"."asset_type" = $3 LIMIT $4[0m  [["type", "AssetCore::Record::Generic"], ["asset_id", 27], ["asset_type", "Asset"], ["LIMIT", 1]]

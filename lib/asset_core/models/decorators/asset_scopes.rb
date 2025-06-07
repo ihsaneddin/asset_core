@@ -23,19 +23,31 @@ module AssetCore
               opts[scp.to_sym] = cfg
             end
 
-            config = plugins_config.setup(self, 'asset_scopes_config', opts, &block)
+            config = plugins_config.setup(self, 'asset_scopes_config', opts, scopes_config.values, &block)
 
             self.asset_scopes= config.values.keys.map(&:to_sym)
-
             self.asset_scopes.each do |asset_scope|
-              asset_scopes_config.send(asset_scope).callbacks.values.each do |callback, v|
-                send callback do
-                  asset_scopes_config.callbacks.send(callback)
+              ::AssetCore::AssetScopes.add_scoped_classes(asset_scope, self.name)
+              if asset_scopes_config.send(asset_scope).exists?(:record_relationships)
+                asset_scopes_config.send(asset_scope).record_relationships.values.each do |relation, builder|
+                  options = builder.extract_options!
+                  rname = builder[0]
+                  scope = builder[1]
+                  ::AssetCore::Record.send(relation, rname, scope, **options)
                 end
               end
-              asset_scopes_config.send(asset_scope).functions.values.each do |funct, v|
-                define_method(funct) do
-                  asset_scopes_config.functions.send(funct)
+              if asset_scopes_config.send(asset_scope).exists?(:entry_callbacks)
+                asset_scopes_config.send(asset_scope).entry_callbacks.values.each do |callback, v|
+                  send callback do
+                    asset_scopes_config.entry_callbacks.send(callback)
+                  end
+                end
+              end
+              if asset_scopes_config.send(asset_scope).exists?(:entry_methods)
+                asset_scopes_config.send(asset_scope).entry_methods.values.each do |funct, v|
+                  define_method(funct) do
+                    asset_scopes_config.entry_methods.send(funct)
+                  end
                 end
               end
             end

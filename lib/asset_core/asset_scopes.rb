@@ -3,21 +3,36 @@ module AssetCore
 
     extend ::AssetCore::Configuration::ConfigBuilder
 
+    mattr_accessor :scoped_classes
+    @@scoped_classes = {}
+
+    def self.add_scoped_classes scope, klass
+      @@scoped_classes[scope.to_sym] ||= []
+      @@scoped_classes[scope.to_sym] << klass
+    end
+
+    def self.get_scoped_classes scope
+      @@scoped_classes[scope.to_sym] || []
+    end
+
     DEFAULT_OPTS = {
-      callbacks: {
+      entry_callbacks: {
         before_validation: nil,
         validate: nil,
         after_validation: nil,
         before_save: nil,
         after_save: nil,
       },
-      functions: {},
-      proxy: {}
+      entry_methods: {},
+      proxy_methods: {}
     }
 
     DEFAULT_SCOPES = {
       acquisition: {
-        callbacks: {
+        record_relationships: {
+          has_one: [:acquisition_entry, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::AssetScopes.get_scoped_classes(:acquisition)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
+        },
+        entry_callbacks: {
           before_validation: nil,
           validate: proc {
             if record.entries.by_entry_scopes("acquisition").where.not(id: id).exists?
@@ -28,18 +43,18 @@ module AssetCore
           before_save: nil,
           after_save: nil,
         },
-        functions: {
+        entry_methods: {
           initial_value: 0
         },
-        proxy: {
+        proxy_methods: {
           initial_value: proc {
-            debugger
-            record.entries.approved.by_entry_scopes("acquisition").first.initial_value
+            acquisition_entry&.initial_value
+            #record.entries.approved.by_entry_scopes("acquisition").first.initial_value
           }
         }
       },
       purchase: {
-        callbacks: {
+        entry_callbacks: {
           before_validation: nil,
           validate: nil,
           after_validation: nil,
@@ -53,7 +68,7 @@ module AssetCore
             end
           },
         },
-        functions: {
+        entry_methods: {
           purchase_value: proc {
             data.price
           },
@@ -61,7 +76,7 @@ module AssetCore
             data.currency
           }
         },
-        proxy: {
+        proxy_methods: {
           purchase_value: proc {
             record.entries.approved.by_entry_scopes("purchase").first.purchase_value
           },
