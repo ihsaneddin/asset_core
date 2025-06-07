@@ -4,7 +4,8 @@ module AssetCore
       module AssetStateReference
 
         def self.included(base)
-          extend ClassMethods
+          base.extend ::AssetCore::Configuration::ConfigBuilder
+          base.extend ClassMethods
         end
 
         def self.default_options
@@ -17,12 +18,11 @@ module AssetCore
 
         module ClassMethods
 
-          def asset_state_reference *args, &block
+          def asset_state_reference **opts, &block
             return unless ActiveRecord::Base.connection.table_exists?('asset_core_states')
-            opts = args.extract_options!
-            opts = AssetCore::Models::Decorators::AssetStateReference.default_options.merge(opts)
+            default_opts = AssetCore::Models::Decorators::AssetStateReference.default_options
 
-            ::Plugins::Models::Concerns::Config.setup(self, 'asset_state_reference_config', opts, &block)
+            plugins_config.setup(self, 'asset_state_reference_config', opts, default_opts, &block)
 
             unless reflect_on_association(:asset_states)
               has_many :asset_states, class_name: "AssetCore::State", as: :reference
@@ -42,7 +42,7 @@ module AssetCore
 
               AssetCore::State.include Plugins::Models::Concerns::PolymorphicAlternative unless AssetCore::State.include?(Plugins::Models::Concerns::PolymorphicAlternative)
               assoc_name = "asset_state_reference_of_#{self.base_class.name.demodulize.underscore}"
-              AssetCore::State.define_alternative_polyorphic_parent_association assoc: :reference, new_assoc: assoc_name, base_class: self.base_class
+              AssetCore::State.define_alternative_polymorphic_parent_association assoc: :reference, new_assoc: assoc_name, base_class: self.base_class
             end
 
             include InstanceMethods unless include?(InstanceMethods)
@@ -54,8 +54,8 @@ module AssetCore
 
         module InstanceMethods
 
-          def asset_state_reference_data(*args)
-            aasset_state_refeference.data(*args)
+          def asset_state_reference_config_data(*args)
+            asset_state_reference_config.data(*args)
           end
 
           def asset_state_reference_sync_data

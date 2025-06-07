@@ -1,6 +1,8 @@
 module AssetCore
   class State < AssetCore.config.application_record_base_constant
 
+    extend ::AssetCore::Configuration::ConfigBuilder
+    include ::Plugins::Models::Concerns::PolymorphicAlternative
     include ::Plugins::Models::Concerns::CustomAttributes
 
     custom_attributes_definition :data, ::AssetCore::Attributes
@@ -80,9 +82,9 @@ module AssetCore
         remark: nil,
         use_reference_data: nil,
         states_list: states_list,
-        data: ::Plugins::Models::Concerns::Config.new(data_opts)
+        data: plugins_config.build(**data_opts)
       }
-      ::Plugins::Models::Concerns::Config.new(opts)
+      plugins_config.build(**opts)
     end
 
     def self.find_by_state_name(name)
@@ -94,10 +96,10 @@ module AssetCore
     def default_attributes_values
       return @default_attributes_values if @default_attributes_values
       hash = {}
-      if record
-        hash[:use_reference_data] = record.asset_config_defaults.state_use_reference_data
-        hash[:manufacture]= record.asset_config_defaults.manufacture
-        hash[:owner] = record.asset_config_defaults.owner
+      if record && record.asset
+        hash[:use_reference_data] = record.asset.config_defaults.state_use_reference_data
+        hash[:manufacture]= record.asset.config_defaults.manufacture
+        hash[:owner] = record.asset.config_defaults.owner
         hash[:data] = {}
         unless self.class.superclass == AssetCore.config.application_record_base_constant
           state_name = self.class.state_name

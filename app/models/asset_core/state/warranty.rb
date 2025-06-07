@@ -1,5 +1,5 @@
 module AssetCore
-  class State::Warranty < AssetCore::Entry
+  class State::Warranty < AssetCore::State
 
   end
 end

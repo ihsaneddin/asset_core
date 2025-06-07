@@ -5,12 +5,15 @@ module AssetCore
       module Asset
 
         def self.included(base)
-          extend ClassMethods
+          extend ::AssetCore::Configuration::ConfigBuilder
+          base.extend ::AssetCore::Configuration::ConfigBuilder
+          base.extend ClassMethods
         end
 
         def self.default_options
           {
-            asset_type: 'generic',
+            record_class: "AssetCore::Record::Generic",
+            proxy_class: 'AssetCore::Models::AssetProxy',
             name: nil,
             description: nil,
             number_generator: proc { SecureRandom.hex(8) },
@@ -20,39 +23,43 @@ module AssetCore
             tag_number_prefix: nil,
             tag_number_suffix: nil,
             sync_data: 'sync', # options are none, async, sync
-            defaults: ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
-            available_entries: proc { ::AssetCore::Record.find_by_asset_type(asset_config.asset_type).available_entries },
-            available_states: proc { ::AssetCore::Record.find_by_asset_type(asset_config.asset_type).available_states },
-            entries: ::Plugins::Models::Concerns::Config.new(::AssetCore::Entry.subclasses.inject({}) do |hash, entry_class|
+            defaults: plugins_config.build(currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false),  # ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
+            entries: plugins_config.build(**::AssetCore::Entry.subclasses.inject({}) do |hash, entry_class|
               hash[entry_class.entry_name.to_sym] = entry_class.asset_record_entry_config
+              hash
             end),
-            states: ::Plugins::Models::Config.new(::AssetCore::State.subclasses..inject({}) do |hash, state_class|
+            states: plugins_config.build(**::AssetCore::State.subclasses.inject({}) do |hash, state_class|
               hash[state_class.state_name.to_sym] = state_class.asset_record_state_config
+              hash
             end)
           }
         end
 
         module ClassMethods
 
-          def acts_as_asset **opts, &block
+          def acts_as_an_asset **opts, &block
             return unless ActiveRecord::Base.connection.table_exists?('asset_core_entries')
 
             default_opts = AssetCore::Models::Decorators::Asset.default_options
-            opts = default_opts.merge(opts.slice(*default_opts.keys))
 
-            ::Plugins::Models::Concerns::Config.setup(self, 'asset_config', opts, &block)
+            plugins_config.setup(self, 'asset_config', opts, default_opts, &block)
 
-            asset_class = ::AssetCore::Record.find_by_asset_type(asset_config.asset_type)
+            asset_class = asset_config.get("record_class") || "AssetCore::Record::Generic"
+            asset_class = asset_class.is_a?(String) ? asset_class.constantize : asset_class
+
+            unless asset_class < ::AssetCore::Record
+              raise "Invalid record class #{asset_class.name}"
+            end
 
             unless reflect_on_association(:asset_record)
-              has_one :asset_record, class_name: "AssetCore::Record", as: :asset, dependent: :destroy
-              has_one "asset_#{asset_class.asset_type}".to_sym, class_name: asset_class.name, as: :asset
+              has_one :asset_record, class_name: asset_class.name, as: :asset, dependent: :destroy
+              #has_one "asset_#{asset_class.asset_type}".to_sym, class_name: asset_class.name, as: :asset
 
               accepts_nested_attributes_for :asset_record
 
-              AssetCore::Record.include Plugins::Models::Concerns::PolymorphicAlternative
+              ::AssetCore::Record.include(::Plugins::Models::Concerns::PolymorphicAlternative) unless include?(Plugins::Models::Concerns::PolymorphicAlternative)
               assoc_name = "asset_of_#{self.base_class.name.demodulize.underscore}"
-              AssetCore::Entry.define_alternative_polyorphic_parent_association assoc: :asset, new_assoc: assoc_name, base_class: self.base_class
+              AssetCore::Record.define_alternative_polymorphic_parent_association assoc: :asset, new_assoc: assoc_name, base_class: self.base_class
 
             end
 
@@ -65,7 +72,7 @@ module AssetCore
         module InstanceMethods
 
           def asset
-            @asset_proxy ||= AssetCore::Models::AssetProxy.new(self)
+            @asset_proxy ||= ::AssetCore::Models::AssetProxy.new(self)
           end
 
           def asset_sync_data

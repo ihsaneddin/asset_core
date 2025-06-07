@@ -3,7 +3,7 @@ module AssetCore
 
     include StoreModel::Model
 
-    class_attributes :protected_attributes
+    class_attribute :protected_attributes
     self.protected_attributes = []
 
     def self.inherited (subclass)
@@ -11,7 +11,7 @@ module AssetCore
       subclass.protected_attributes = self.protected_attributes.dup
     end
 
-    def self.unprotected_attributes
+    def self.assignable_attributes
       new.attributes.keys.reject{ |att| self.protected_attributes.map(&:to_s).include?(att.to_s) }
     end
 

@@ -35,5 +35,4 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'closure_tree'
   spec.add_dependency 'validates_timeliness'
   spec.add_dependency 'hashdiff'
-  spec.add_dependency 'closure_tree'
 end

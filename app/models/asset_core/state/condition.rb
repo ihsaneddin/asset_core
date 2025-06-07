@@ -1,5 +1,5 @@
 module AssetCore
-  class State::Condition < AssetCore::Entry
+  class State::Condition < AssetCore::State
 
   end
 end

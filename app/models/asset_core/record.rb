@@ -1,6 +1,8 @@
 module AssetCore
   class Record < AssetCore.config.application_record_base_constant
 
+    include ::Plugins::Models::Concerns::PolymorphicAlternative
+
     self.table_name = 'asset_core_records'
 
     class_attribute :asset_type
@@ -9,7 +11,6 @@ module AssetCore
     has_closure_tree hierarchy_table_name: 'asset_core_record_hierarchies', dependent: :destroy
 
     belongs_to :owner, polymorphic: true, optional: true
-    belongs_to :manufacture, polymorphic: true, optional: true
     belongs_to :asset, polymorphic: true
     belongs_to :model, class_name: "AssetCore::Model", optional: true
     has_many :entries, class_name: "AssetCore::Entry", foreign_key: :record_id, dependent: :destroy, inverse_of: :record
@@ -36,21 +37,25 @@ module AssetCore
       end
     end
 
+    validate do
+
+    end
+
     def self.inherited sub
       super(sub)
       sub.asset_type = sub.name.demodulize.underscore
     end
 
     def self.define_entry_relation(entry_class)
-      return if entry_class.reflect_on_association(entry_class.entry_name.pluralize.to_sym).present?
-      has_many entry_class.entry_name.pluralize.to_sym, class_name: entry_class.name, foreign_key: :record_id
-      has_one entry_class.entry_name.to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: entry_class.name, foreign_key: :record_id
+      return if reflect_on_association(entry_class.entry_name.pluralize.to_sym).present?
+      has_many "entry_#{entry_class.entry_name.pluralize}".to_sym, class_name: entry_class.name, foreign_key: :record_id
+      has_one "current_entry_#{entry_class.entry_name}".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: entry_class.name, foreign_key: :record_id
     end
 
-    def self.define_entry_relation(state_class)
-      return if state_class.reflect_on_association(state_class.state_name.pluralize.to_sym).present?
-      has_many state_class.state_name.pluralize.to_sym, class_name: state_class.name, foreign_key: :record_id
-      has_one state_class.state_name.to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
+    def self.define_state_relation(state_class)
+      return if reflect_on_association(state_class.state_name.pluralize.to_sym).present?
+      has_many "state_#{state_class.state_name.pluralize}".to_sym, class_name: state_class.name, foreign_key: :record_id
+      has_one "current_state_#{state_class.state_name}".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
     end
 
     def self.find_by_asset_type(name)
@@ -59,18 +64,18 @@ module AssetCore
       sub
     end
 
-    def self.available_entries
-      AssetCore::Entry.subclasses.map{|sub| sub.entry_name }
-    end
-
-    def self.available_states
-      AssetCore::State.subclasses.map{|sub| sub.state_name }
-    end
-
     def data_sync(ref)
       if ref.asset_config_name != name || ref.asset_config_description != description
         update name: ref.asset_config_name, description: ref.asset_config_description
       end
+    end
+
+    def asset_config
+      return @_asset_config if @_asset_config
+      if asset
+        @_asset_config = asset.asset_config
+      end
+      @_asset_config
     end
 
   end

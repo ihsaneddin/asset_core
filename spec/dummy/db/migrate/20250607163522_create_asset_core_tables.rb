@@ -54,6 +54,15 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.integer :generations, null: false
     end
 
+    # create_table :asset_core_record_entries, force: :cascade do |t|
+    #   t.references :record, index: true
+    #   t.references :entry, index: true
+    #   t.boolean :active, default: true
+    #   t.string :type
+    #   t.datetime :deleted_at
+    #   t.timestamps
+    # end
+
     create_table :asset_core_entries, force: :cascade do |t|
       t.references :record, index: true
       t.references :reference, polymorphic: true, index: true
@@ -123,15 +132,71 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
+    # execute <<-SQL
+    #   CREATE OR REPLACE VIEW asset_core_combined_entries AS
+    #     SELECT e.*, re.record_id AS combined_record_id
+    #     FROM asset_core_entries e
+    #     JOIN asset_core_record_entries re ON e.id = re.entry_id
+
+    #     UNION
+
+    #     SELECT e.*, e.record_id AS combined_record_id
+    #     FROM asset_core_entries e
+    #     WHERE e.record_id IS NOT NULL;
+    # SQL
+
+    # create_table :asset_core_purchases, force: :cascade do |t|
+    #   t.references :entry, index: true
+    #   t.references :reference, polymorphic: true, index: true
+
+    #   #core field
+    #   t.string :supplier_name
+    #   t.datetime :date
+    #   t.decimal :price, precision: 12, scale: 3, default: 0
+    #   t.string :currency
+    #   t.text :remark
+
+    #   t.jsonb :metadata, default: {}
+    #   t.string :type
+    #   t.datetime :deleted_at
+    #   t.timestamps
+    # end
+
+    # create_table :asset_core_depreciations, force: :cascade do |t|
+    #   t.references :entry, index: true
+    #   t.references :reference, polymorphic: true, index: true
+    #   t.references :source, index: true
+
+    #   #core field
+    #   t.string :method, default: "straight_line"
+
+    #   t.integer :expected_lifespan
+    #   t.string :expected_lifespan_unit, default: "year"
+
+    #   t.date :start_date
+    #   t.string :currency
+    #   t.decimal :residual_price, precision: 12, scale: 3, default: 0
+    #   t.decimal :depreciation_rate, precision: 12, scale: 3, default: 0
+
+
+    #   t.jsonb :metadata, default: {}
+    #   t.string :type
+    #   t.datetime :deleted_at
+    #   t.timestamps
+    # end
+
+
   end
 
   def down
     drop_table :asset_core_records
     drop_table :asset_core_models
     drop_table :asset_core_record_hierarchies
+    #drop_table :asset_core_record_entries
     drop_table :asset_core_entries
-    drop_table :asset_core_entry_items
     drop_table :asset_core_states
     drop_table :asset_core_generics
+
+    execute "DROP VIEW IF EXISTS asset_core_combined_entries;"
   end
 end

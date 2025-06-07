@@ -1,5 +1,5 @@
 module AssetCore
-  class State::Operational < AssetCore::Entry
+  class State::Operational < AssetCore::State
 
   end
 end

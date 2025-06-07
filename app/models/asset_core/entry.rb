@@ -4,7 +4,9 @@ require 'hashdiff'
 module AssetCore
   class Entry < AssetCore.config.application_record_base_constant
 
+    include ::Plugins::Models::Concerns::PolymorphicAlternative
     include ::Plugins::Models::Concerns::CustomAttributes
+    include ::AssetCore.decorators.asset_scopes
 
     custom_attributes_definition :data, ::AssetCore::Attributes
 
@@ -14,9 +16,8 @@ module AssetCore
 
     self.table_name = 'asset_core_entries'
 
-    class_attribute :entry_name, :entry_scopes
+    class_attribute :entry_name
     self.entry_name = name.demodulize.underscore
-    self.entry_scopes = []
 
     belongs_to :record, class_name: "AssetCore::Record", foreign_key: :record_id, optional: true
     belongs_to :previous_entry, class_name: "AssetCore::Entry", foreign_key: :previous_entry_id, optional: true
@@ -52,25 +53,6 @@ module AssetCore
       end
     end
 
-    after_save do
-      if state == "approved" && saved_change_to_state?
-        if record && record.asset
-          record.asset.asset_config.entries.send(self.class.entry_name).after_entry_is_approved(self)
-        end
-      end
-      if state == "rejected" && saved_change_to_state?
-        record.asset.asset_config.entries.send(self.class.entry_name).after_entry_is_rejected(self)
-      end
-    end
-
-    def after_entry_is_approved
-      raise "Must be implemented"
-    end
-
-    def after_entry_is_rejected
-      raise "Must be implemented"
-    end
-
     def set_attributes_before_validation_on_create
       self.number ||= default_attributes_values[:number]
       self.number ||= generate_number
@@ -86,12 +68,7 @@ module AssetCore
     def self.inherited(subclass)
       super(subclass)
       subclass.entry_name= subclass.name.demodulize.underscore
-      subclass.entry_scopes = entry_scopes.dup
       AssetCore::Record.define_entry_relation(subclass)
-    end
-
-    def self.included_in_scopes(*scopes)
-      scopes.any? { |scp| entry_scopes.map(&:to_s).include?(scp.to_s)  }
     end
 
     def self.asset_record_entry_config
@@ -103,15 +80,9 @@ module AssetCore
         number: nil,
         description: nil,
         use_reference_data: nil,
-        after_entry_is_approved: proc {|entry|
-          entry.after_entry_is_approved
-        },
-        after_entry_is_rejected: proc {|entry|
-          entry.after_entry_is_rejected
-        },
-        data: ::Plugins::Models::Concerns::Config.new(data_opts)
+        data: plugins_config.build(**data_opts)
       }
-      ::Plugins::Models::Concerns::Config.new(opts)
+      plugins_config.build(**opts)
     end
 
     def self.find_by_entry_name(name)
@@ -124,10 +95,10 @@ module AssetCore
       return @default_attributes_values if @default_attributes_values
       hash = {}
       if record
-        hash[:use_reference_data] = record.asset_config_defaults.entry_use_reference_data
-        hash[:manufacture]= record.asset_config_defaults.manufacture
-        hash[:owner] = record.asset_config_defaults.owner
-        hash[:currency] = record.asset_config_defaults.currency
+        hash[:use_reference_data] = record.asset.config_defaults.entry_use_reference_data
+        hash[:manufacture]= record.asset.config_defaults.manufacture
+        hash[:owner] = record.asset.config_defaults.owner
+        hash[:currency] = record.asset.config_defaults.currency
         hash[:data] = {}
         unless self.class.superclass == AssetCore.config.application_record_base_constant
           entry_name = self.class.entry_name

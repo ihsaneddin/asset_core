@@ -4,7 +4,8 @@ module AssetCore
       module AssetEntryReference
 
         def self.included(base)
-          extend ClassMethods
+          base.extend ::AssetCore::Configuration::ConfigBuilder
+          base.extend ClassMethods
         end
 
         def self.default_options
@@ -17,12 +18,12 @@ module AssetCore
 
         module ClassMethods
 
-          def acts_as_asset_entry_reference *args, &block
+          def acts_as_asset_entry_reference **opts, &block
             return unless ActiveRecord::Base.connection.table_exists?('asset_core_entries')
-            opts = args.extract_options!
-            opts = AssetCore::Models::Decorators::AssetEntryReference.default_options.merge(opts)
+            default_opts = AssetCore::Models::Decorators::AssetEntryReference.default_options
 
-            ::Plugins::Models::Concerns::Config.setup(self, 'asset_entry_reference_config', opts, &block)
+            # ::Plugins::Models::Concerns::Config.setup(self, 'asset_entry_reference_config', opts, &block)
+            plugins_config.setup(self, 'asset_entry_reference_config', opts, default_opts, &block)
 
             unless reflect_on_association(:asset_entries)
               has_many :asset_entries, class_name: "AssetCore::Entry", as: :reference
@@ -42,7 +43,7 @@ module AssetCore
 
               AssetCore::Entry.include Plugins::Models::Concerns::PolymorphicAlternative unless AssetCore::Entry.include?(Plugins::Models::Concerns::PolymorphicAlternative)
               assoc_name = "asset_entry_reference_of_#{self.base_class.name.demodulize.underscore}"
-              AssetCore::Entry.define_alternative_polyorphic_parent_association assoc: :reference, new_assoc: assoc_name, base_class: self.base_class
+              AssetCore::Entry.define_alternative_polymorphic_parent_association assoc: :reference, new_assoc: assoc_name, base_class: self.base_class
             end
 
             include InstanceMethods unless include?(InstanceMethods)

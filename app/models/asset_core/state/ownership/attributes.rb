@@ -9,8 +9,8 @@ module AssetCore
     attribute :start_date, :date
     attribute :end_date, :date
 
-    validates :start_date, timeliness: { type: date }, allow_blank: true
-    validates :end_date, timeliness: { type: date }, allow_blank: true
+    validates :start_date, timeliness: { type: :date }, allow_blank: true
+    validates :end_date, timeliness: { type: :date }, allow_blank: true
 
   end
 end

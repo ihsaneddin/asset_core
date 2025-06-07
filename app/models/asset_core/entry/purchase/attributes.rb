@@ -8,7 +8,7 @@ module AssetCore
 
     validates :date, timeliness: { type: :date, allow_blank: true }
     validates :price, numericality: { greater_than: 0 }, allow_blank: true
-    validates :supplier_name, inclusion: { in: available_supplier_names }, if: :available_supplier_names
+    validates :supplier_name, inclusion: { in: :available_supplier_names }, if: :available_supplier_names
 
     def available_supplier_names
       if parent

@@ -1,28 +1,48 @@
 module AssetCore
   module Decorators
 
-    def asset
+    def self.asset
       ::AssetCore::Models::Decorators::Asset
     end
 
-    def asset_methods
+    def self.asset_methods
       asset::InstanceMethods
     end
 
-    def asset_entry_reference
+    def self.asset_entry_reference
       ::AssetCore::Models::Decorators::AssetEntryReference
     end
 
-    def asset_entry_reference_methods
+    def self.asset_entry_reference_methods
       asset_entry_reference::InstanceMethods
     end
 
-    def asset_state_reference
+    def self.asset_state_reference
       ::AssetCore::Models::Decorators::AssetStateReference
     end
 
-    def asset_state_reference
+    def self.asset_state_reference_methods
       asset_state_reference::InstanceMethods
+    end
+
+    def self.asset_owner
+      ::AssetCore::Models::Decorators::AssetOwner
+    end
+
+    def self.asset_owner_methods
+      asset_owner::InstanceMethods
+    end
+
+    def self.asset_custodian
+      ::AssetCore::Models::Decorators::AssetCustodian
+    end
+
+    def self.asset_custodian_methods
+      asset_custodian::InstanceMethods
+    end
+
+    def self.asset_scopes
+      ::AssetCore::Models::Decorators::AssetScopes
     end
 
   end

@@ -1,7 +1,7 @@
 module AssetCore
   class Entry::Release < AssetCore::Entry
 
-    custom_attribute_definitions :data, Attributes
+    custom_attributes_definition :data, Attributes
 
     #TODO
     def gain_or_loss(as_of: Date.today)

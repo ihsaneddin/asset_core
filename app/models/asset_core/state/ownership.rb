@@ -1,5 +1,5 @@
 module AssetCore
-  class State::Ownership < AssetCore::Entry
+  class State::Ownership < AssetCore::State
 
     custom_attributes_definition :data, Attributes
 

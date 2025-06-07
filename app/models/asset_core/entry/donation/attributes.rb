@@ -1,6 +1,8 @@
 module AssetCore
   class Entry::Donation::Attributes < AssetCore::Attributes
 
+    include ActiveModel::Validations::Callbacks
+
     attribute :date, :date
     attribute :donor_name, :string
     attribute :estimated_value, :decimal, default: 0.0

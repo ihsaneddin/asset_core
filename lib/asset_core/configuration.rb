@@ -1,9 +1,11 @@
 module AssetCore
+  autoload :AssetScopes, "asset_core/asset_scopes"
   module Configuration
     autoload :Api, "asset_core/configuration/api"
     autoload :GrapeApi, "asset_core/configuration/grape_api"
     autoload :Permissions, "asset_core/configuration/permissions"
     autoload :Models, "asset_core/configuration/models"
+    autoload :ConfigBuilder, "asset_core/configuration/config_builder"
 
     include Plugins::Configuration::Core
 
@@ -31,6 +33,9 @@ module AssetCore
 
     mattr_accessor :soft_delete_enabled
     @@soft_delete_enabled = true
+
+    mattr_accessor :asset_scopes
+    @@asset_scopes = ::AssetCore::AssetScopes
 
   end
 end

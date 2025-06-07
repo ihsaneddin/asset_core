@@ -6,6 +6,14 @@ module AssetCore
     isolate_namespace AssetCore
     config.generators.api_only = true
 
+    config.to_prepare do
+      unless Rails.env.production?
+        Dir.glob(AssetCore::Engine.root.join("app/models/asset_core/**/*.rb")).each do |file|
+          require_dependency file
+        end
+      end
+    end
+
     config.after_initialize do |app|
       Sidekiq.configure_server do |cfg|
         cfg.on :startup do

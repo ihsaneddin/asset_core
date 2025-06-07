@@ -1,5 +1,5 @@
 module AssetCore
-  class State::Usage < AssetCore::Entry
+  class State::Usage < AssetCore::State
 
   end
 end

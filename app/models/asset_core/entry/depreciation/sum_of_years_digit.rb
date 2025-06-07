@@ -1,5 +1,5 @@
 module AssetCore
-  class Entry::Depreciation::SumOfYearsDigits < AssetCore::Entry::Depreciation::Calculator
+  class Entry::Depreciation::SumOfYearsDigit < AssetCore::Entry::Depreciation::Calculator
 
     self.method_name = :sum_of_years_digits
 

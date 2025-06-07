@@ -1,5 +1,5 @@
 module AssetCore
-  class State::Unknown < AssetCore::Entry
+  class State::Unknown < AssetCore::State
 
   end
 end
