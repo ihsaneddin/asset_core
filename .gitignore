@@ -9,4 +9,3 @@
 /spec/dummy/storage/
 /spec/dummy/tmp/
 /spec/dummy/.byebug_history
-/spec/dummy/log/development.log
