@@ -10,10 +10,6 @@ module AssetCore
 
     custom_attributes_definition :data, ::AssetCore::Attributes
 
-    asset_state_reference do
-      description :description
-    end
-
     self.table_name = 'asset_core_entries'
 
     class_attribute :entry_name
@@ -37,7 +33,7 @@ module AssetCore
     }
 
     scope :by_entry_scopes, -> (*scopes) {
-      types = ::AssetCore::Entry.descendants.select{|sub| sub.included_in_scopes(*scopes) }.map(&:name)
+      types = ::AssetCore::Entry.descendants.reject{|sub| !sub.asset_scopes.nil? }.select{|sub| sub.included_in_scopes(*scopes) }.map(&:name)
       where(type: types)
     }
 
@@ -46,23 +42,92 @@ module AssetCore
     }
 
     before_validation :set_attributes_before_validation_on_create, on: :create
-
-    validate do
-      if reference
-        errors.add(:reference, :invalid) unless reference.class.include?(::AssetCore.decorators.asset_entry_reference_methods)
+    with_options if: :reference do
+      validate do
+        errors.add(:reference, :invalid) unless valid_reference?
       end
     end
 
+    def valid_reference?
+      reference && reference.class.include?(::AssetCore.decorators.asset_entry_reference_methods)
+    end
+
+    def generate_number
+      SecureRandom.hex(8)
+    end
+
     def set_attributes_before_validation_on_create
-      self.number ||= default_attributes_values[:number]
-      self.number ||= generate_number
-      self.description ||= default_attributes_values[:description]
-      self.use_reference_data ||= default_attributes_values[:use_reference_data]
+      self.use_reference_data ||= record_asset_config_options[:use_reference_data]
       if use_reference_data
-        data_use_reference_data
+        attributes_use_asset_entry_reference
       else
-        data_use_default_attributes_values_data
+        attributes_use_default_record_asset_config
       end
+      self.number ||= generate_number
+    end
+
+    def attributes_use_asset_entry_reference()
+      _data = reference_config_options()
+      self.number = _data[:number]
+      self.description = _data[:description]
+      self.data.class.assignable_attributes.each do |att|
+        self.data.send("#{att}=", _data[att.to_sym]) #if self.data.send(att).nil?
+      end
+    end
+
+    def attributes_use_asset_entry_reference!()
+      attributes_use_asset_entry_reference()
+      save
+    end
+
+    def attributes_use_default_record_asset_config
+      _data = record_asset_config_options
+      self.number ||= _data[:number]
+      self.description ||= _data[:description]
+      self.data.class.assignable_attributes.each do |att|
+        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
+      end
+    end
+
+    def record_asset_config_options
+      return @record_asset_config_options if @record_asset_config_options
+      if record
+        hash = {}
+        hash[:use_reference_data] = record.asset.asset_config_defaults.entry_use_reference_data
+        hash[:currency] = record.asset.asset_config_defaults.currency
+        entry_name = self.class.entry_name
+        if record.asset.asset_config.entries.send(entry_name).is_a?(self.class.plugins_config)
+          hash[:number] = record.asset.asset_config.entries.send(entry_name).number
+          hash[:description] = record.asset.asset_config.entries.send(entry_name).description
+          unless record.asset.asset_config.entries.send(entry_name).use_reference_data.nil?
+            hash[:use_reference_data] = record.asset.asset_config.entries.send(entry_name).use_reference_data
+          end
+          data_class = self.class.attribute_types['data'].model_klass
+          data_class.assignable_attributes.each do |att|
+            hash[:data][att.to_sym] = record.asset.asset_config.entries.send(entry_name).data.send(att)
+            if att.to_sym == :currency
+              hash[:data][att.to_sym] ||= hash[:currency]
+            end
+          end
+        end
+        @record_asset_config_options = hash
+      end
+      @record_asset_config_options || {}
+    end
+
+    def reference_config_options
+      return @reference_config_options if @reference_config_options
+      if reference && valid_reference?
+        hash = {}
+        hash[:number] = reference.asset_entry_reference_config.number
+        hash[:description] = reference.asset_entry_reference_config.description
+        ref_data = reference.asset_entry_reference_config.data || {}
+        data_class = self.class.attribute_types['data'].model_klass
+        data_class.assignable_attributes.each do |att|
+          hash[:data][att.to_sym] = ref_data[att.to_sym]
+        end
+      end
+      @reference_config_options || {}
     end
 
     def self.inherited(subclass)
@@ -91,36 +156,8 @@ module AssetCore
       sub
     end
 
-    def default_attributes_values
-      return @default_attributes_values if @default_attributes_values
-      hash = {}
-      if record
-        hash[:use_reference_data] = record.asset.config_defaults.entry_use_reference_data
-        hash[:manufacture]= record.asset.config_defaults.manufacture
-        hash[:owner] = record.asset.config_defaults.owner
-        hash[:currency] = record.asset.config_defaults.currency
-        hash[:data] = {}
-        unless self.class.superclass == AssetCore.config.application_record_base_constant
-          entry_name = self.class.entry_name
-          hash[:number] = record.asset.asset_config.entries.send(entry_name).number
-          hash[:description] = record.asset.asset_config.entries.send(entry_name).description
-          unless record.asset.asset_config.entries.send(entry_name).use_reference_data.nil?
-            hash[:use_reference_data] = record.asset.asset_config.entries.send(entry_name).use_reference_data
-          end
-          data_class =  AssetCore::Entry.attribute_types['data'].model_klass
-          data_class.assignable_attributes.each do |att|
-            hash[:data][att.to_sym] = record.asset.asset_config.entries.send(entry_name).data.send(att)
-            if att.to_sym == :currency
-              hash[:data][att.to_sym] ||= hash[:currency]
-            end
-          end
-        end
-      end
-      @default_attributes_values = hash
-    end
-
-    def data_sync(ref)
-      ref
+    def self.after_engine_initialization
+      #overload this
     end
 
     include ::AASM
@@ -161,40 +198,6 @@ module AssetCore
       if previous_entry_id.blank? && effective_at.present?
         prev_entry = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
         self.previous_entry = prev_entry
-      end
-    end
-
-    def generate_number
-      SecureRandom.hex(8)
-    end
-
-    def data_use_reference_data(ref=nil)
-      ref ||= reference
-      if ref.class.include?(::AssetCore.decorators.asset_entry_reference_methods)
-        ref_data = ref.asset_entry_reference_config.data
-        self.data.class.assignable_attributes.each do |att|
-          self.data.send("#{att}=", ref_data[att.to_sym])
-        end
-        self.data
-      end
-    end
-
-    def data_use_reference_data!(ref=nil)
-      save if data_use_reference_data
-    end
-
-    def data_use_default_attributes_values_data
-      _data = default_attributes_values[:data]
-      self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
-      end
-    end
-
-    def data_sync(ref)
-      atts = data.class.assignable_attributes.symbolize_keys
-      ref_data = ref.asset_entry_reference_config.data.symbolize_keys.slice(*atts.keys)
-      unless Hashdiff.diff(atts, ref_data).should == []
-        data_use_reference_data!(ref)
       end
     end
 

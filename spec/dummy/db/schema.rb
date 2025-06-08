@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_06_07_165913) do
+ActiveRecord::Schema[7.0].define(version: 2025_06_08_162746) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -107,8 +107,6 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_07_165913) do
     t.string "owner_type"
     t.bigint "owner_id"
     t.bigint "parent_id"
-    t.string "manufacturer_type"
-    t.bigint "manufacturer_id"
     t.string "name"
     t.text "description"
     t.string "number"
@@ -122,7 +120,6 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_07_165913) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["asset_type", "asset_id"], name: "index_asset_core_records_on_asset"
-    t.index ["manufacturer_type", "manufacturer_id"], name: "index_asset_core_records_on_manufacturer"
     t.index ["model_id"], name: "index_asset_core_records_on_model_id"
     t.index ["owner_type", "owner_id"], name: "index_asset_core_records_on_owner"
     t.index ["parent_id"], name: "index_asset_core_records_on_parent_id"
@@ -166,10 +163,18 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_07_165913) do
   end
 
   create_table "invoices", force: :cascade do |t|
+    t.string "customer_type"
+    t.bigint "customer_id"
+    t.string "vendor_type"
+    t.bigint "vendor_id"
     t.string "number"
     t.decimal "amount", precision: 10, scale: 6
+    t.string "currency", default: "RM"
+    t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["customer_type", "customer_id"], name: "index_invoices_on_customer"
+    t.index ["vendor_type", "vendor_id"], name: "index_invoices_on_vendor"
   end
 
   create_table "organizations", force: :cascade do |t|

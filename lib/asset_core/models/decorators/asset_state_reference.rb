@@ -10,7 +10,8 @@ module AssetCore
 
         def self.default_options
           {
-            description: nil,
+            index: nil,
+            remark: nil,
             data: {},
             sync_data: 'none', # options are none, async, syncsync_data
           }
@@ -23,21 +24,18 @@ module AssetCore
             default_opts = AssetCore::Models::Decorators::AssetStateReference.default_options
 
             plugins_config.setup(self, 'asset_state_reference_config', opts, default_opts, &block)
-
             unless reflect_on_association(:asset_states)
               has_many :asset_states, class_name: "AssetCore::State", as: :reference
-              has_many :approved_states, -> { where(state: 'approved').where.not(effective_at: nil) }, class_name: "AssetCore::State", as: :reference, extend: Extensions::DataSync
+              has_many :current_states, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::State", as: :reference
 
               accepts_nested_attributes_for :asset_states, allow_destroy: true
 
               AssetCore::State.subclasses.each do |sub|
                 has_many "asset_#{sub.state_name}_states".to_sym, class_name: sub.name, as: :reference
-                has_many "approved_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
-                has_one "approved_#{sub.state_name}_state".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
-                has_many "future_approved_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at > ?". DateTime.now) }, class_name: sub.name, as: :reference, extend: Extensions::DataSync
+                has_one "current_asset_#{sub.state_name}_state".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: sub.name, as: :reference
+                has_many "future_asset_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at > ?". DateTime.now) }, class_name: sub.name, as: :reference
 
                 accepts_nested_attributes_for "asset_#{sub.state_name}_states".to_sym, allow_destroy: true
-
               end
 
               AssetCore::State.include Plugins::Models::Concerns::PolymorphicAlternative unless AssetCore::State.include?(Plugins::Models::Concerns::PolymorphicAlternative)
@@ -58,27 +56,47 @@ module AssetCore
             asset_state_reference_config.data(*args)
           end
 
-          def asset_state_reference_sync_data
-            AssetCore::State.subclasses.each do |sub|
-              assoc = "approved_#{sub.entry_name}_state".to_sym
-              send(assoc).data_sync(self) if respond_to?(:assoc)
-              assoc = "future_approved_#{sub.entry_name}_states".to_sym
-              send(assoc).data_sync(self) if respond_to?(assoc)
-            end
-          end
-
         end
 
         module SyncCallbacks
           extend ActiveSupport::Concern
 
           included do
-            after_commit if: proc { |record| asset_state_reference_config.sync != 'none' } do
+
+            attr_accessor :asset_state_data
+
+            after_initialize :set_asset_state_data
+            after_save :set_asset_state_data
+
+            after_commit if: :asset_state_data_changes? do
               if asset_state_reference_config.sync == 'sync'
                 asset_state_reference_sync_data
               elsif asset_state_reference_config.sync == 'async'
                 AssetCore::StateReferenceWorker.perform_at(DateTime.now, nil, 'data_sync', *[self.class.name, self.id])
               end
+            end
+          end
+
+          def set_asset_state_data
+            self.asset_state_data = {
+              index: asset_state_reference_config_index,
+              remark: asset_state_reference_config_remark,
+              data: asset_state_reference_config_data
+            }
+          end
+
+          def asset_state_data_changes?
+            current_asset_state_data = {
+              index: asset_state_reference_config_index,
+              remark: asset_state_reference_config_remark,
+              data: asset_state_reference_config_data
+            }
+            !(Hashdiff.diff(current_asset_state_data, asset_state_data).empty?)
+          end
+
+          def sync_asset_states
+            asset_entries.where(use_reference_data: true).each do |stat|
+              stat.attributes_use_asset_state_reference!
             end
           end
 

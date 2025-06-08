@@ -64,6 +64,7 @@ module AssetCore
               if record && record.asset
                 asset_state = asset_ownership_states.new( record: record , index_name: "owned")
                 asset_state.approve!
+                debugger
               end
             end
           },

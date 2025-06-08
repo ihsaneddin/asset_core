@@ -6,7 +6,7 @@ module AssetCore
 
     def data_sync(asset_class, asset_id)
       asset_constant = asset_class.constantize
-      return if asset_constant.include?(AssetCore::Models::Decorators::Asset)
+      return unless asset_constant.include?(::AssetCore.decorators.asset_methods)
       asset = asset_constant.find(asset_id)
       if asset
         asset.asset_sync_data

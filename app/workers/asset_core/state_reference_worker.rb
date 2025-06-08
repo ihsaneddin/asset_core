@@ -9,7 +9,7 @@ module AssetCore
       return if ref_constant.include?(AssetCore::Models::Decorators::AssetStateReference)
       ref = ref_constant.find(reference_id)
       if ref
-        ref.asset_state_reference_sync_data
+        ref.sync_asset_states
       end
     end
 

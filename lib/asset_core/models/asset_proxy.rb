@@ -30,23 +30,23 @@ module AssetCore
         ::AssetCore::State.descendants.each do |sub|
 
           define_method("#{sub.state_name}_state".to_sym) do
-            record.send("current_state_#{sub.state_name}").try(:state_label)
+            record.send("current_#{sub.state_name}_state").try(:state_label)
           end
 
           define_method("#{sub.state_name}_state_label".to_sym) do
-            send("#{sub.state_name}_state").try(:state_label)
+            send("current_#{sub.state_name}_state").try(:state_label)
           end
 
           define_method("#{sub.state_name}_state_name".to_sym) do
-            send("#{sub.state_name}_state").try(:state_name)
+            send("current_#{sub.state_name}_state").try(:state_name)
           end
 
           define_method("#{sub.state_name}_state_index".to_sym) do
-            send("#{sub.state_name}_state").try(:index)
+            send("current_#{sub.state_name}_state").try(:index)
           end
 
           define_method("previous_#{sub.state_name}_state_label".to_sym) do
-            record.send("current_state_#{sub.state_name}").try(:previous_state)
+            record.send("current_#{sub.state_name}_state").try(:previous_state)
           end
 
           define_method("previous_#{sub.state_name}_state_label".to_sym) do

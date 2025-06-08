@@ -16,14 +16,11 @@ module AssetCore
             proxy_class: 'AssetCore::Models::AssetProxy',
             name: nil,
             description: nil,
+            owner: nil,
             number_generator: proc { SecureRandom.hex(8) },
             tag_number_generator: proc { SecureRandom.hex(8) },
-            number_prefix: nil,
-            number_suffix: nil,
-            tag_number_prefix: nil,
-            tag_number_suffix: nil,
             sync_data: 'sync', # options are none, async, sync
-            defaults: plugins_config.build(currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false),  # ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
+            defaults: plugins_config.build(currency: nil, entry_use_reference_data: false, state_use_reference_data: false),  # ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
             entries: plugins_config.build(**::AssetCore::Entry.subclasses.inject({}) do |hash, entry_class|
               hash[entry_class.entry_name.to_sym] = entry_class.asset_record_entry_config
               hash
@@ -75,22 +72,51 @@ module AssetCore
             @asset_proxy ||= ::AssetCore::Models::AssetProxy.new(self)
           end
 
-          def asset_sync_data
-            asset_record.sync_data if asset_record
-          end
-
         end
 
         module SyncCallbacks
           extend ActiveSupport::Concern
 
           included do
-            after_commit if: proc { |record| asset_config.sync != 'none' } do
+
+            attr_accessor :asset_data
+
+            after_initialize :set_asset_data
+            after_save :set_asset_data
+
+            before_commit if: :asset_data_changes? do
               if asset_config.sync == 'sync'
                 asset_sync_data
-              elsif asset_entry_reference_config.sync == 'async'
+              elsif asset_config.sync == 'async'
                 AssetCore::AssetWorker.perform_at(DateTime.now, nil, 'data_sync', *[self.class.name, self.id])
               end
+            end
+          end
+
+          def set_asset_data
+            self.asset_data = {
+              name: asset_config_name,
+              description: asset_config_description
+            }
+          end
+
+          def asset_data_changes?
+            current_asset_data = {
+              name: asset_config_name,
+              description: asset_config_description
+            }
+            !(Hashdiff.diff(current_asset_data, asset_data).empty?)
+          end
+
+          def asset_sync_data
+            if asset_record
+              current_asset_data = {
+                name: asset_config_name,
+                description: asset_config_description
+              }
+              asset_record.name= current_asset_data[:name]
+              asset_record.description = current_asset_data[:description]
+              asset_record.save
             end
           end
 

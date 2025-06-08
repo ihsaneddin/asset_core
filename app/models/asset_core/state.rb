@@ -37,32 +37,109 @@ module AssetCore
       where("effective_at <= ?", time)
     }
 
+    before_validation do
+      if self.index_name
+        self.index = self.find_state_index_with_name(self.index_name)
+      end
+    end
     before_validation :set_attributes_before_validation_on_create, on: :create
+    with_options if: :reference do
+      validate do
+        errors.add(:reference, :invalid) unless valid_reference?
+      end
+    end
 
     validates :index, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
-    validate do
-      if reference
-        errors.add(:reference, :invalid) unless reference.class.include?(::AssetCore.decorators.asset_state_reference_methods)
+    before_create do
+      if self.class.with_record(record_id).exists?
+        prev_state = self.class.with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+        self.previous_state = prev_state
+      else
+        self.initial= true
+        approve
       end
     end
 
-    after_validation do
-      self.label ||= self.name.to_s.humanize
+    before_save do
+      if previous_state_id.blank? && effective_at.present?
+        prev_state = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
+        self.previous_state = prev_state
+      end
+    end
+
+    def valid_reference?
+      reference && reference.class.include?(::AssetCore.decorators.asset_state_reference_methods)
     end
 
     def set_attributes_before_validation_on_create
-      if index_name
-        self.index ||= find_state_index_with_name(index_name)
-      end
-      self.index ||= default_attributes_values[:index]
-      self.remark ||= default_attributes_values[:remark]
-      self.use_reference_data ||= default_attributes_values[:use_reference_data]
+      self.use_reference_data ||= record_asset_config_options[:use_reference_data]
       if use_reference_data
-        data_use_reference_data
+        attributes_use_asset_state_reference
       else
-        data_use_default_attributes_values_data
+        attributes_use_default_record_asset_config
       end
+    end
+
+    def attributes_use_asset_state_reference()
+      _data = reference_config_options()
+      self.index = _data[:index]
+      self.remark = _data[:remark]
+      self.data.class.assignable_attributes.each do |att|
+        self.data.send("#{att}=", _data[att.to_sym]) #if self.data.send(att).nil?
+      end
+    end
+
+    def attributes_use_asset_state_reference!
+      attributes_use_asset_state_reference
+      save
+    end
+
+    def attributes_use_default_record_asset_config
+      _data = record_asset_config_options
+      self.index ||= _data[:index]
+      self.remark ||= _data[:remark]
+      self.data.class.assignable_attributes.each do |att|
+        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
+      end
+    end
+
+    def record_asset_config_options
+      return @record_asset_config_options if @record_asset_config_options
+      if record
+        hash = {}
+        hash[:use_reference_data] = record.asset.asset_config_defaults.entry_use_reference_data
+        hash[:currency] = record.asset.asset_config_defaults.currency
+        state_name = self.class.state_name
+        if record.asset.asset_config.states.send(state_name).is_a?(self.class.plugins_config)
+          hash[:index] = record.asset.asset_config.states.send(state_name).index
+          hash[:remark] = record.asset.asset_config.states.send(state_name).remark
+          unless record.asset.asset_config.states.send(state_name).use_reference_data.nil?
+            hash[:use_reference_data] = record.asset.asset_config.states.send(state_name).use_reference_data
+          end
+          data_class = self.class.attribute_types['data'].model_klass
+          data_class.assignable_attributes.each do |att|
+            hash[:data][att.to_sym] = record.asset.asset_config.states.send(state_name).data.send(att)
+          end
+        end
+        @record_asset_config_options = hash
+      end
+      @record_asset_config_options || {}
+    end
+
+    def reference_config_options
+      return @reference_config_options if @reference_config_options
+      if reference && valid_reference?
+        hash = {}
+        hash[:index] = reference.asset_entry_reference_config.index
+        hash[:remark] = reference.asset_entry_reference_config.remark
+        ref_data = reference.asset_entry_reference_config.data || {}
+        data_class = self.class.attribute_types['data'].model_klass
+        data_class.assignable_attributes.each do |att|
+          hash[:data][att.to_sym] = ref_data[att.to_sym]
+        end
+      end
+      @reference_config_options || {}
     end
 
     def self.inherited(subclass)
@@ -93,35 +170,6 @@ module AssetCore
       sub
     end
 
-    def default_attributes_values
-      return @default_attributes_values if @default_attributes_values
-      hash = {}
-      if record && record.asset
-        hash[:use_reference_data] = record.asset.config_defaults.state_use_reference_data
-        hash[:manufacture]= record.asset.config_defaults.manufacture
-        hash[:owner] = record.asset.config_defaults.owner
-        hash[:data] = {}
-        unless self.class.superclass == AssetCore.config.application_record_base_constant
-          state_name = self.class.state_name
-          hash[:index] = record.asset.asset_config.states.send(state_name).index
-          hash[:remark] = record.asset.asset_config.states.send(state_name).remark
-          hash[:states_list] = record.asset.asset_config.states.send(state_name).states_list
-          unless record.asset.asset_config.states.send(entry_name).use_reference_data.nil?
-            hash[:use_reference_data] = record.asset.asset_config.states.send(entry_name).use_reference_data
-          end
-          data_class =  AssetCore::Entry.attribute_types['data'].model_klass
-          data_class.assignable_attributes.each do |att|
-            hash[:data][att.to_sym] = record.asset.asset_config.states.send(state_name).data.send(att)
-          end
-        end
-      end
-      @default_attributes_values = hash
-    end
-
-    def data_sync(ref)
-      ref
-    end
-
     include ::AASM
 
     aasm :state, timestamps: true do
@@ -146,55 +194,8 @@ module AssetCore
 
     end
 
-    before_create do
-      if self.class.with_record(record_id).exists?
-        prev_state = self.class.with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
-        self.previous_state = prev_state
-      else
-        self.initial= true
-        approve
-      end
-    end
-
-    before_save do
-      if previous_state_id.blank? && effective_at.present?
-        prev_state = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
-        self.previous_state = prev_state
-      end
-    end
-
-    def data_use_reference_data(ref=nil)
-      ref ||= reference
-      if ref.class.include?(::AssetCore.decorators.asset_state_reference_methods)
-        ref_data = ref.asset_state_reference_config.data
-        self.data.class.assignable_attributes.each do |att|
-          self.data.send("#{att}=", ref_data[att.to_sym])
-        end
-        self.data
-      end
-    end
-
-    def data_use_reference_data!(ref=nil)
-      save if data_use_reference_data
-    end
-
-    def data_use_default_attributes_values_data
-      _data = default_attributes_values[:data]
-      self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
-      end
-    end
-
-    def data_sync(ref)
-      atts = data.attributes.symbolize_keys
-      ref_data = ref.asset_state_reference_config.data.symbolize_keys.slice(*atts.keys)
-      unless Hashdiff.diff(atts, ref_data).should == []
-        data_use_reference_data!(ref)
-      end
-    end
-
     def states_list
-      default_attributes_values[:states_list] || []
+      self.class.states_list || []
     end
 
     def state_name

@@ -1,18 +1,21 @@
 module AssetCore
   class Entry::Purchase < AssetCore::Entry
 
-    custom_attributes_definition :data, Attributes
+    class Attributes < AssetCore::Attributes
+      attribute :date, :date
+      attribute :price, :decimal, default: 0.0
+      attribute :currency, :string
+      attribute :invoice_number, :string
+      attribute :vendor_name, :string
+      attribute :vendor_address, :string
+      attribute :vendor_phone_number, :string
 
-    asset_state_reference do
-      data do
-        {
-          custodian_name: record.try(:asset).try(:owner).try(:name),
-          custodian_address: record.try(:asset).try(:owner).try(:address),
-          start_date: created_at,
-          end_date: nil
-        }
-      end
+      validates :date, timeliness: { type: :date, allow_blank: true }
+      validates :price, numericality: { greater_than: 0 }, allow_blank: true
+
     end
+
+    custom_attributes_definition :data, ::AssetCore::Entry::Purchase::Attributes
 
     define_asset_scopes :acquisition, :purchase #do
     #   purchase do
@@ -38,6 +41,20 @@ module AssetCore
     #     end
     #   end
     # end
+    #
+    def self.after_engine_initialization
+      asset_state_reference do
+        index 0,
+        data do
+          {
+            custodian_name: record.try(:asset).try(:owner).try(:name),
+            custodian_address: record.try(:asset).try(:owner).try(:address),
+            start_date: created_at,
+            end_date: nil
+          }
+        end
+      end
+    end
 
   end
 end

@@ -7,7 +7,6 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.references :model, index: true
       t.references :owner, polymorphic: true, index: true
       t.references :parent, index: true
-      t.references :manufacturer, polymorphic: true, index: true
 
       #core fields
       t.string :name
@@ -67,7 +66,7 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.datetime :rejected_at
       t.datetime :approved_at
       t.datetime :effective_at
-      t.boolean :use_reference_data, default: false
+      t.boolean :use_reference_data
 
       t.text :remark
       t.boolean :initial, default: false
@@ -104,7 +103,7 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.datetime :rejected_at
       t.datetime :approved_at
       t.datetime :effective_at
-      t.boolean :use_reference_data, default: false
+      t.boolean :use_reference_data
 
       t.text :remark
       t.boolean :initial, default: false

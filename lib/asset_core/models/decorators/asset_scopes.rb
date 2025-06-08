@@ -39,14 +39,14 @@ module AssetCore
               if asset_scopes_config.send(asset_scope).exists?(:entry_callbacks)
                 asset_scopes_config.send(asset_scope).entry_callbacks.values.each do |callback, v|
                   send callback do
-                    asset_scopes_config.entry_callbacks.send(callback)
+                    asset_scopes_config.send(asset_scope).entry_callbacks.send(callback)
                   end
                 end
               end
               if asset_scopes_config.send(asset_scope).exists?(:entry_methods)
                 asset_scopes_config.send(asset_scope).entry_methods.values.each do |funct, v|
                   define_method(funct) do
-                    asset_scopes_config.entry_methods.send(funct)
+                    asset_scopes_config.send(asset_scope).entry_methods.send(funct)
                   end
                 end
               end

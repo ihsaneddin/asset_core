@@ -19,26 +19,30 @@ module AssetCore
     accepts_nested_attributes_for :entries, allow_destroy: true
     accepts_nested_attributes_for :states, allow_destroy: true
 
-    before_validation on: :create do
-      if asset.class.include?(::AssetCore.decorators.asset_methods)
-        self.name ||= ref.asset_config_name
-        self.description ||= ref.asset_config_description
-        self.owner ||= asset.asset_config.defaults.owner
-        self.number ||= asset.asset_config_number_generator
-        self.tag_number ||=  asset.asset_config_tag_number_generator
-        self.number = "#{asset.asset_config_number_prefix}#{self.number}#{asset.asset_config_number_suffix}"
-        self.tag_number = "#{asset.asset_config_tag_number_prefix}#{self.tag_number}#{asset.asset_config_tag_number_suffix}"
+    with_options if: :asset do
+      before_validation on: :create do
+        if valid_asset?
+          attributes_use_default_asset_config
+        end
+      end
+
+      validate do
+        errors.add(:asset, :invalid) unless valid_asset?
       end
     end
 
-    validate do
-      if asset
-        errors.add(:asset, :invalid) unless asset.class.include?(::AssetCore.decorators.asset_methods)
+    with_options if: :owner do
+      validate do
+        errors.add(:owner, :invalid) unless valid_owner?
       end
     end
 
-    validate do
+    def valid_asset?
+      asset && asset.class.include?(::AssetCore.decorators.asset_methods)
+    end
 
+    def valid_owner?
+      owner && owner.class.include?(::AssetCore.decorators.asset_owner_methods)
     end
 
     def self.inherited sub
@@ -48,14 +52,14 @@ module AssetCore
 
     def self.define_entry_relation(entry_class)
       return if reflect_on_association(entry_class.entry_name.pluralize.to_sym).present?
-      has_many "entry_#{entry_class.entry_name.pluralize}".to_sym, class_name: entry_class.name, foreign_key: :record_id
-      has_one "current_entry_#{entry_class.entry_name}".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: entry_class.name, foreign_key: :record_id
+      has_many "#{entry_class.entry_name}_entries".to_sym, class_name: entry_class.name, foreign_key: :record_id
+      has_one "current_#{entry_class.entry_name}_entry".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: entry_class.name, foreign_key: :record_id
     end
 
     def self.define_state_relation(state_class)
       return if reflect_on_association(state_class.state_name.pluralize.to_sym).present?
-      has_many "state_#{state_class.state_name.pluralize}".to_sym, class_name: state_class.name, foreign_key: :record_id
-      has_one "current_state_#{state_class.state_name}".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
+      has_many "#{state_class.state_name}_states".to_sym, class_name: state_class.name, foreign_key: :record_id
+      has_one "current_#{state_class.state_name}_state".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
     end
 
     def self.find_by_asset_type(name)
@@ -64,10 +68,32 @@ module AssetCore
       sub
     end
 
-    def data_sync(ref)
-      if ref.asset_config_name != name || ref.asset_config_description != description
-        update name: ref.asset_config_name, description: ref.asset_config_description
+    def attributes_use_default_asset_config
+      _data = asset_config_options
+      self.name ||= _data[:name]
+      self.description ||= _data[:description]
+      self.owner ||= _data[:owner]
+      self.number ||= _data[:number]
+      self.tag_number ||=  _data[:tag_number]
+    end
+
+    def attributes_use_default_asset_config!
+      attributes_use_default_asset_config
+      save
+    end
+
+    def asset_config_options
+      return @asset_config_options if @asset_config_options
+      if asset && valid_asset?
+        hash = {}
+        hash[:name] = asset.asset_config_name
+        hash[:description] = asset.asset_config_description
+        hash[:owner] = asset.asset_config.owner
+        hash[:number] = asset.asset_config_number_generator
+        hash[:tag_number] = asset.asset_config_tag_number_generator
+        @asset_config_options = hash
       end
+      @asset_config_options || {}
     end
 
     def asset_config

@@ -15,6 +15,7 @@ module AssetCore
     end
 
     config.after_initialize do |app|
+      AssetCore::Engine.load_entries_decorators
       Sidekiq.configure_server do |cfg|
         cfg.on :startup do
           AssetCore::Engine.load_sidekiq_scheduler(cfg)
@@ -46,6 +47,10 @@ module AssetCore
             SidekiqScheduler::Scheduler.instance.reload_schedule!
           end
         end
+      end
+
+      def load_entries_decorators
+        ::AssetCore::Entry.descendants.each(&:after_engine_initialization)
       end
 
     end
