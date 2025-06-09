@@ -1,6 +1,5 @@
 module AssetCore
   class Entry::Depreciation::DecliningBalance < AssetCore::Entry::Depreciation::Calculator
-
     self.method_name = :declining_balance
 
     def self.requires_rate?
@@ -14,18 +13,20 @@ module AssetCore
 
     def calculate_entries
       raise ArgumentError, "Rate must be present for declining balance method" unless rate
-
       entries = []
-      current_value = amount
+      current_value = initial_value
       accumulated = 0.0
-      period_intervals.each_with_index do |index, i|
+      intervals = period_intervals
+
+      intervals.each_with_index do |index, i|
         date = advance_time(index)
-        break if date > as_of_date
+        break if date >= current_date
 
-        depreciation = ((current_value * rate) / 100.0).round(2)
-        remaining = amount - accumulated
+        depreciation = (current_value * rate.to_f).round(2)
+        remaining = initial_value - accumulated
 
-        if depreciation > remaining - residual_value
+        # Do not depreciate below residual value
+        if depreciation > (remaining - residual_value)
           depreciation = (remaining - residual_value).round(2)
         end
 
@@ -38,7 +39,7 @@ module AssetCore
           week: nil,
           day: nil,
           index: index,
-          amount: depreciation,
+          value: depreciation,
           date: date
         }.merge(group_label(index))
       end

@@ -42,15 +42,18 @@ Invoice.asset_entry_reference do
   description :description
   data do
     {
-      date: created_at,
+      date: date,
       price: amount,
       currency: "RM"
     }
   end
 end
 
-asset.asset_record.purchase_entries.create(
+#should create purchase entry for asset
+entry = asset.asset_record.purchase_entries.create(
+  use_reference_data: true,
   reference: Invoice.create(
+    date: Date.today,
     vendor: vendor,
     customer: company,
     number: SecureRandom.hex(8),
@@ -60,8 +63,45 @@ asset.asset_record.purchase_entries.create(
   )
 )
 
+unless entry.persisted?
+  raise "Test failed"
+end
+
+#should fail purchase entry for asset
+donation = asset.asset_record.purchase_entries.create(
+  use_reference_data: true,
+  data_attributes: {
+    date: Date.today,
+    estimated_value: 100,
+    currency: "RM"
+  }
+)
+
+if donation.persisted?
+  raise "Test failed"
+end
+
+depreciation = asset.asset_record.depreciation_entries.create(
+  data_attributes: {
+    expected_lifespan: 5,
+    expected_lifespan_unit: "year",
+    depreciation_method: "sum_of_years_digit",
+    residual_value: 5,
+    rate: 0.2
+  }
+)
+
+depreciation.net_book_value( Date.today + 1.year).to_s
+asset.asset.depreciation.net_book_value(Date.today + 1.year)
+
+release = asset.asset_record.release_entries.create(
+  data_attributes: {
+    release_methods: "sale",
+    release_value: 50,
+    reason: nil,
+  }
+)
+
 debugger
 
 company
-
-

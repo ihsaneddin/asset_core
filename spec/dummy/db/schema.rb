@@ -168,6 +168,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_08_162746) do
     t.string "vendor_type"
     t.bigint "vendor_id"
     t.string "number"
+    t.date "date"
     t.decimal "amount", precision: 10, scale: 6
     t.string "currency", default: "RM"
     t.text "description"

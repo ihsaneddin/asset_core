@@ -1,10 +1,12 @@
 require 'sidekiq'
 require 'sidekiq-scheduler'
+require 'plugins/engine_callbacks'
 
 module AssetCore
   class Engine < ::Rails::Engine
     isolate_namespace AssetCore
     config.generators.api_only = true
+
 
     config.to_prepare do
       unless Rails.env.production?
@@ -14,8 +16,9 @@ module AssetCore
       end
     end
 
+    extend ::Plugins::EngineCallbacks
+
     config.after_initialize do |app|
-      AssetCore::Engine.load_entries_decorators
       Sidekiq.configure_server do |cfg|
         cfg.on :startup do
           AssetCore::Engine.load_sidekiq_scheduler(cfg)
@@ -49,9 +52,9 @@ module AssetCore
         end
       end
 
-      def load_entries_decorators
-        ::AssetCore::Entry.descendants.each(&:after_engine_initialization)
-      end
+      # def load_entries_decorators
+      #   ::AssetCore::Entry.descendants.each(&:after_engine_initialization)
+      # end
 
     end
 

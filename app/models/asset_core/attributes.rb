@@ -2,6 +2,7 @@ module AssetCore
   class Attributes
 
     include StoreModel::Model
+    include ActiveModel::Validations::Callbacks
 
     class_attribute :protected_attributes
     self.protected_attributes = []

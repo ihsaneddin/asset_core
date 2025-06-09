@@ -57,7 +57,7 @@ module AssetCore
         self.previous_state = prev_state
       else
         self.initial= true
-        approve
+        approve if may_approve?
       end
     end
 
@@ -85,8 +85,9 @@ module AssetCore
       _data = reference_config_options()
       self.index = _data[:index]
       self.remark = _data[:remark]
+      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", _data[att.to_sym]) #if self.data.send(att).nil?
+        self.data.send("#{att}=", data_atts[att.to_sym]) #if self.data.send(att).nil?
       end
     end
 
@@ -99,8 +100,9 @@ module AssetCore
       _data = record_asset_config_options
       self.index ||= _data[:index]
       self.remark ||= _data[:remark]
+      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
+        self.data.send("#{att}=", data_atts[att.to_sym]) if self.data.send(att).nil?
       end
     end
 
@@ -117,6 +119,7 @@ module AssetCore
           unless record.asset.asset_config.states.send(state_name).use_reference_data.nil?
             hash[:use_reference_data] = record.asset.asset_config.states.send(state_name).use_reference_data
           end
+          hash[:data] = {}
           data_class = self.class.attribute_types['data'].model_klass
           data_class.assignable_attributes.each do |att|
             hash[:data][att.to_sym] = record.asset.asset_config.states.send(state_name).data.send(att)
@@ -131,13 +134,15 @@ module AssetCore
       return @reference_config_options if @reference_config_options
       if reference && valid_reference?
         hash = {}
-        hash[:index] = reference.asset_entry_reference_config.index
-        hash[:remark] = reference.asset_entry_reference_config.remark
-        ref_data = reference.asset_entry_reference_config.data || {}
+        hash[:index] = reference.asset_state_reference_config.index
+        hash[:remark] = reference.asset_state_reference_config.remark
+        hash[:data] = {}
+        ref_data = reference.asset_state_reference_config.data || {}
         data_class = self.class.attribute_types['data'].model_klass
         data_class.assignable_attributes.each do |att|
           hash[:data][att.to_sym] = ref_data[att.to_sym]
         end
+        @reference_config_options = hash
       end
       @reference_config_options || {}
     end
@@ -147,6 +152,9 @@ module AssetCore
       subclass.state_name= subclass.name.demodulize.underscore
       subclass.states_list = states_list.dup
       AssetCore::Record.define_state_relation(subclass)
+      ::AssetCore::Models::Decorators::AssetStateReference.reference_classes.each do |ref_class|
+        ref_class.define_state_subclass_relation(subclass)
+      end
     end
 
     def self.asset_record_state_config

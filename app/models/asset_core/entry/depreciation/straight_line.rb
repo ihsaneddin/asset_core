@@ -1,3 +1,6 @@
+require 'bigdecimal'
+require 'bigdecimal/util'
+
 module AssetCore
   class Entry::Depreciation::StraightLine < AssetCore::Entry::Depreciation::Calculator
     self.method_name = :straight_line
@@ -18,18 +21,29 @@ module AssetCore
     end
 
     def calculate_entries
-      total = amount - residual_value
-      monthly = (total / total_months.to_f).round(2)
+      total = initial_value.to_d - residual_value.to_d
+      monthly = (total / total_months).round(2)
 
-      month_intervals.map do |month|
-        date = purchase_date.advance(months: month - 1)
+      entries = month_intervals.map.with_index do |month_index, i|
+        date = start_date.advance(months: month_index - 1)
+
+        value =
+          if i == total_months - 1
+            # Adjust the final value to ensure total depreciation is accurate
+            (total - monthly * (total_months - 1)).round(2)
+          else
+            monthly
+          end
+
         {
-          year: (month - 1) / 12 + 1,
-          month: month,
-          amount: monthly,
+          year: date.year,
+          month: date.month,
+          value: value.to_f, # return as float for compatibility
           date: date
         }
-      end.select { |entry| entry[:date] <= as_of_date }
+      end
+
+      entries.select { |entry| entry[:date] <= current_date }
     end
   end
 end

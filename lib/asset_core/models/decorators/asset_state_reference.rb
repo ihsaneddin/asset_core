@@ -3,6 +3,13 @@ module AssetCore
     module Decorators
       module AssetStateReference
 
+        mattr_accessor :reference_classes
+        @@reference_classes = []
+
+        def self.<< klass
+          @@reference_classes << klass
+        end
+
         def self.included(base)
           base.extend ::AssetCore::Configuration::ConfigBuilder
           base.extend ClassMethods
@@ -31,11 +38,7 @@ module AssetCore
               accepts_nested_attributes_for :asset_states, allow_destroy: true
 
               AssetCore::State.subclasses.each do |sub|
-                has_many "asset_#{sub.state_name}_states".to_sym, class_name: sub.name, as: :reference
-                has_one "current_asset_#{sub.state_name}_state".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: sub.name, as: :reference
-                has_many "future_asset_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at > ?". DateTime.now) }, class_name: sub.name, as: :reference
-
-                accepts_nested_attributes_for "asset_#{sub.state_name}_states".to_sym, allow_destroy: true
+                define_state_subclass_relation(sub)
               end
 
               AssetCore::State.include Plugins::Models::Concerns::PolymorphicAlternative unless AssetCore::State.include?(Plugins::Models::Concerns::PolymorphicAlternative)
@@ -46,6 +49,21 @@ module AssetCore
             include InstanceMethods unless include?(InstanceMethods)
             include SyncCallbacks unless include?(SyncCallbacks)
 
+            ::AssetCore::Models::Decorators::AssetEntryReference << self
+
+          end
+
+          def define_state_subclass_relation sub
+            unless reflect_on_association("asset_#{sub.state_name}_states".to_sym)
+              has_many "asset_#{sub.state_name}_states".to_sym, class_name: sub.name, as: :reference
+              accepts_nested_attributes_for "asset_#{sub.state_name}_states".to_sym, allow_destroy: true
+            end
+            unless reflect_on_association("current_asset_#{sub.state_name}_state".to_sym)
+              has_one "current_asset_#{sub.state_name}_state".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at <= ?". DateTime.now).order(effective_at: :desc) }, class_name: sub.name, as: :reference
+            end
+            unless reflect_on_association("future_asset_#{sub.state_name}_states".to_sym)
+              has_many "future_asset_#{sub.state_name}_states".to_sym, -> { where(state: 'approved').where.not(effective_at: nil).where("effective_at > ?". DateTime.now) }, class_name: sub.name, as: :reference
+            end
           end
 
         end
@@ -95,7 +113,7 @@ module AssetCore
           end
 
           def sync_asset_states
-            asset_entries.where(use_reference_data: true).each do |stat|
+            asset_states.where(use_reference_data: true).each do |stat|
               stat.attributes_use_asset_state_reference!
             end
           end

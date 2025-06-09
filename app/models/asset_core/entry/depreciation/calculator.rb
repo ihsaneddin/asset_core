@@ -2,35 +2,23 @@ module AssetCore
   class Entry::Depreciation::Calculator
     class_attribute :method_name
 
-    attr_reader :purchase_date, :lifespan, :lifespan_unit, :residual_value, :amount, :as_of_date, :rate
+    attr_reader :start_date, :lifespan, :lifespan_unit, :residual_value, :initial_value, :current_date, :rate
 
-    def initialize(purchase_date:, lifespan:, lifespan_unit:, residual_value:, amount:, as_of_date: Date.today, rate: nil)
-      @purchase_date = purchase_date
+    def initialize(start_date:, lifespan:, lifespan_unit:, residual_value:, initial_value:, current_date: Date.today, rate: nil)
+      @start_date = start_date
       @lifespan = lifespan
       @lifespan_unit = lifespan_unit
       @residual_value = residual_value
-      @amount = amount
-      @as_of_date = as_of_date
+      @initial_value = initial_value
+      @current_date = current_date
       @rate = rate
-    end
-
-    def self.from_entry(entry, as_of: Date.today)
-      new(
-        purchase_date: entry.data.start_date,
-        lifespan: entry.data.expected_lifespan,
-        lifespan_unit: entry.data.expected_lifespan_unit,
-        residual_value: entry.residual_value,
-        amount: entry.purchase_price,
-        as_of_date: as_of,
-        rate: entry.data.rate
-      )
     end
 
     def self.requires_rate?
       false
     end
 
-    def self.default_residual_value(amount:)
+    def self.default_residual_value(initial_value:)
       0.0
     end
 
@@ -46,13 +34,13 @@ module AssetCore
       offset = index - 1
       case lifespan_unit
       when 'day'
-        purchase_date + offset.days
+        start_date + offset.days
       when 'week'
-        purchase_date + (offset * 7).days
+        start_date + (offset * 7).days
       when 'month'
-        purchase_date.advance(months: offset)
+        start_date.advance(months: offset)
       when 'year'
-        purchase_date.advance(years: offset)
+        start_date.advance(years: offset)
       else
         raise ArgumentError, "Unsupported lifespan_unit: #{lifespan_unit}"
       end
@@ -79,6 +67,10 @@ module AssetCore
       period ? group_by_period(entries, period) : entries
     end
 
+    def calculate_entries
+      raise NotImplementedError, "Subclasses must implement `calculate_entries`"
+    end
+
     def group_by_period(entries, period)
       grouped = entries.group_by do |entry|
         date = entry[:date]
@@ -99,7 +91,7 @@ module AssetCore
       grouped.map do |key, group|
         {
           period: key,
-          amount: group.sum { |e| e[:amount] },
+          initial_value: group.sum { |e| e[:initial_value] },
           entries: group
         }
       end

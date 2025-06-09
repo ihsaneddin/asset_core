@@ -33,7 +33,7 @@ module AssetCore
     }
 
     scope :by_entry_scopes, -> (*scopes) {
-      types = ::AssetCore::Entry.descendants.reject{|sub| !sub.asset_scopes.nil? }.select{|sub| sub.included_in_scopes(*scopes) }.map(&:name)
+      types = ::AssetCore::Entry.descendants.select{|sub| sub.included_in_scopes?(*scopes) }.map(&:name)
       where(type: types)
     }
 
@@ -70,8 +70,9 @@ module AssetCore
       _data = reference_config_options()
       self.number = _data[:number]
       self.description = _data[:description]
+      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", _data[att.to_sym]) #if self.data.send(att).nil?
+        self.data.send("#{att}=", data_atts[att.to_sym]) #if self.data.send(att).nil?
       end
     end
 
@@ -84,8 +85,9 @@ module AssetCore
       _data = record_asset_config_options
       self.number ||= _data[:number]
       self.description ||= _data[:description]
+      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", _data[att.to_sym]) if self.data.send(att).nil?
+        self.data.send("#{att}=", data_atts[att.to_sym]) if self.data.send(att).nil?
       end
     end
 
@@ -102,6 +104,7 @@ module AssetCore
           unless record.asset.asset_config.entries.send(entry_name).use_reference_data.nil?
             hash[:use_reference_data] = record.asset.asset_config.entries.send(entry_name).use_reference_data
           end
+          hash[:data] = {}
           data_class = self.class.attribute_types['data'].model_klass
           data_class.assignable_attributes.each do |att|
             hash[:data][att.to_sym] = record.asset.asset_config.entries.send(entry_name).data.send(att)
@@ -121,11 +124,16 @@ module AssetCore
         hash = {}
         hash[:number] = reference.asset_entry_reference_config.number
         hash[:description] = reference.asset_entry_reference_config.description
+        hash[:data] = {}
         ref_data = reference.asset_entry_reference_config.data || {}
         data_class = self.class.attribute_types['data'].model_klass
         data_class.assignable_attributes.each do |att|
           hash[:data][att.to_sym] = ref_data[att.to_sym]
+          if att.to_sym == :currency
+            hash[:data][att.to_sym] ||= record.asset.asset_config_defaults.currency
+          end
         end
+        @reference_config_options = hash
       end
       @reference_config_options || {}
     end
@@ -134,6 +142,9 @@ module AssetCore
       super(subclass)
       subclass.entry_name= subclass.name.demodulize.underscore
       AssetCore::Record.define_entry_relation(subclass)
+      ::AssetCore::Models::Decorators::AssetEntryReference.reference_classes.each do |ref_class|
+        ref_class.define_entry_subclass_relation(subclass)
+      end
     end
 
     def self.asset_record_entry_config
@@ -154,10 +165,6 @@ module AssetCore
       sub = subclasses.select{|sub| sub.entry_name.to_s == name.to_s}[0]
       raise ArgumentError, "Entry name '#{name}' not found" unless sub
       sub
-    end
-
-    def self.after_engine_initialization
-      #overload this
     end
 
     include ::AASM

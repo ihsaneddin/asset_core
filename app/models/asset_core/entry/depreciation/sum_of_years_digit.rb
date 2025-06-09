@@ -1,7 +1,7 @@
 module AssetCore
   class Entry::Depreciation::SumOfYearsDigit < AssetCore::Entry::Depreciation::Calculator
 
-    self.method_name = :sum_of_years_digits
+    self.method_name = :sum_of_years_digit
 
     def calculate(period: nil)
       entries = calculate_entries
@@ -9,7 +9,7 @@ module AssetCore
     end
 
     def calculate_entries
-      total_value = amount - residual_value
+      total_value = initial_value - residual_value
       n = total_periods
       denominator = (n * (n + 1)) / 2.0
 
@@ -17,7 +17,7 @@ module AssetCore
 
       period_intervals.each do |index|
         date = advance_time(index)
-        break if date > as_of_date
+        break if date >= current_date
 
         numerator = n - index + 1
         depreciation = (total_value * numerator / denominator).round(2)
@@ -28,7 +28,7 @@ module AssetCore
           week: nil,
           day: nil,
           index: index,
-          amount: depreciation,
+          value: depreciation,
           date: date
         }.merge(group_label(index))
       end

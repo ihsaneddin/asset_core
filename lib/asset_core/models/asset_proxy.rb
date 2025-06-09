@@ -22,31 +22,31 @@ module AssetCore
         end
 
         cfg.keys.each do |key|
-          define_method(key) do
-            config.send(key)
+          define_method(key) do |*args|
+            config.send(key, *args)
           end
         end
 
         ::AssetCore::State.descendants.each do |sub|
 
           define_method("#{sub.state_name}_state".to_sym) do
-            record.send("current_#{sub.state_name}_state").try(:state_label)
+            record.send("current_#{sub.state_name}_state")
           end
 
           define_method("#{sub.state_name}_state_label".to_sym) do
-            send("current_#{sub.state_name}_state").try(:state_label)
+            send("#{sub.state_name}_state").try(:state_label)
           end
 
           define_method("#{sub.state_name}_state_name".to_sym) do
-            send("current_#{sub.state_name}_state").try(:state_name)
+            send("#{sub.state_name}_state").try(:state_name)
           end
 
           define_method("#{sub.state_name}_state_index".to_sym) do
-            send("current_#{sub.state_name}_state").try(:index)
+            send("#{sub.state_name}_state").try(:index)
           end
 
-          define_method("previous_#{sub.state_name}_state_label".to_sym) do
-            record.send("current_#{sub.state_name}_state").try(:previous_state)
+          define_method("previous_#{sub.state_name}_state".to_sym) do
+            send("#{sub.state_name}_state").try(:previous_state)
           end
 
           define_method("previous_#{sub.state_name}_state_label".to_sym) do
