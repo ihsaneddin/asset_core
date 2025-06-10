@@ -20,7 +20,7 @@ class CreateAssetCoreTables < ActiveRecord::Migration[7.0]
       t.datetime :discharged_at
 
       #helper fields
-      t.jsonb :data
+      t.jsonb :data, default: {}
 
       t.string :type
       t.datetime :deleted_at

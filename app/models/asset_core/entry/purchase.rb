@@ -10,14 +10,28 @@ module AssetCore
         remark :description
         data do
           {
-            custodian_name: record.asset.owner.try(:asset_owner_name),
-            custodian_address: record.asset.owner.try(:asset_owner_address),
+            custodian_name: record&.asset&.owner&.try(:asset_owner_name),
+            custodian_address: record&.asset&.owner&.try(:asset_owner_address),
             start_date: created_at || Date.today,
             end_date: nil
           }
         end
       end
+
+      asset_entry_reference do
+        number do
+          SecureRandom.hex(8)
+        end
+        description :description
+        data do
+          {
+            quantity: data.quantity
+          }
+        end
+      end
+
     end
+
 
     class Attributes < AssetCore::Attributes
 
@@ -28,6 +42,7 @@ module AssetCore
       attribute :vendor_name, :string
       attribute :vendor_address, :string
       attribute :vendor_phone_number, :string
+      attribute :quantity
 
       before_validation do
         self.date ||= Date.today
@@ -42,7 +57,7 @@ module AssetCore
 
     define_asset_scopes :acquisition, :purchase do
       acquisition do
-        entry_methods do
+        functions do
           acquisition_value do
             data.price
           end

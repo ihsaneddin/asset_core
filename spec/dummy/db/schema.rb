@@ -114,7 +114,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_08_162746) do
     t.string "state"
     t.datetime "registered_at"
     t.datetime "discharged_at"
-    t.jsonb "data"
+    t.jsonb "data", default: {}
     t.string "type"
     t.datetime "deleted_at"
     t.datetime "created_at", null: false

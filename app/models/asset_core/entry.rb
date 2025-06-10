@@ -7,6 +7,7 @@ module AssetCore
     include ::Plugins::Models::Concerns::PolymorphicAlternative
     include ::Plugins::Models::Concerns::CustomAttributes
     include ::AssetCore.decorators.asset_scopes
+    include ::AssetCore.decorators.asset_scopes::EntryScopes
 
     custom_attributes_definition :data, ::AssetCore::Attributes
 

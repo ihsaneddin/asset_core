@@ -13,11 +13,14 @@ module AssetCore
       @@scoped_classes[scope.to_sym] << klass
     end
 
-    def self.get_scoped_classes scope
-      @@scoped_classes[scope.to_sym] || []
+    def self.get_scoped_classes *_scopes
+      _scopes.inject([]) do |arr, scope|
+        arr + @@scoped_classes[scope.to_sym] || []
+      end
     end
 
     DEFAULT_OPTS = {
+      record_methods: {},
       record_relationships: {},
       entry_callbacks: {
         before_validation: nil,
@@ -122,28 +125,28 @@ module AssetCore
     #   }
     # }
 
-    def self.add_default_scope_with mod
-      key = mod.name.demodulize.underscore.to_sym
-      opts = mod.scope_options.inject({}) do |hash, (k, v)|
-        hash[k]= plugins_config.build(**v)
-        hash
-      end
-      @@default_scopes[key]= opts.dup
-    end
+    # def self.add_default_scope_with mod
+    #   key = mod.name.demodulize.underscore.to_sym
+    #   opts = mod.scope_options.inject({}) do |hash, (k, v)|
+    #     hash[k]= plugins_config.build(**v)
+    #     hash
+    #   end
+    #   @@default_scopes[key]= opts.dup
+    # end
 
-        def self.scopes
-      if @@_scopes.nil?
-        @@_scopes= plugins_config.build()
-        @@default_scopes.dup.each do |key, value|
-          opts = value.inject({}) do |hash, (k, v)|
-            hash[k]= plugins_config.build(**v)
-            hash
-          end
-          define_scope(key, opts)
-        end
-      end
-      @@_scopes
-    end
+    # def self.scopes
+    #   if @@_scopes.nil?
+    #     @@_scopes= plugins_config.build()
+    #     @@default_scopes.dup.each do |key, value|
+    #       opts = value.inject({}) do |hash, (k, v)|
+    #         hash[k]= plugins_config.build(**v)
+    #         hash
+    #       end
+    #       define_scope(key, opts)
+    #     end
+    #   end
+    #   @@_scopes
+    # end
 
     mattr_accessor :scopes
     @@scopes = plugins_config.build()
@@ -197,8 +200,12 @@ module AssetCore
         mod.extend ::AssetCore::Configuration::ConfigBuilder
         mod.before_asset_core_initialization do
           key = mod.try(:scope_name) || mod.name.demodulize.underscore
-          opts = mod.scope_options.inject({}) do |hash, (k, v)|
-            hash[k]= plugins_config.build(**v)
+          opts = mod.scope_options.inject({}) do |hash, (key, val)|
+            ctx = val.inject({}) do |res, (k, v)|
+              res[k]= plugins_config.build(**v)
+              res
+            end
+            hash[key] = plugins_config.build(**ctx)
             hash
           end
           ::AssetCore::AssetScopes.define_scope(key.to_sym, opts)

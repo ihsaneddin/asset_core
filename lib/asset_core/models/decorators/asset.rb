@@ -12,7 +12,6 @@ module AssetCore
 
         def self.default_options
           {
-            record_class: "AssetCore::Record::Generic",
             proxy_class: 'AssetCore::Models::AssetProxy',
             name: nil,
             description: nil,
@@ -34,19 +33,20 @@ module AssetCore
 
         module ClassMethods
 
-          def acts_as_an_asset **opts, &block
+          def acts_as_an_asset *args, &block
             return unless ActiveRecord::Base.connection.table_exists?('asset_core_entries')
+
+            opts = args.extract_options!
+            _type = args[0] || "single"
+            asset_class = ::AssetCore::Record.find_by_asset_type(_type)
+
+            unless asset_class < ::AssetCore::Record
+              raise "Invalid asset type '#{_type}'"
+            end
 
             default_opts = AssetCore::Models::Decorators::Asset.default_options
 
             plugins_config.setup(self, 'asset_config', opts, default_opts, &block)
-
-            asset_class = asset_config.get("record_class") || "AssetCore::Record::Generic"
-            asset_class = asset_class.is_a?(String) ? asset_class.constantize : asset_class
-
-            unless asset_class < ::AssetCore::Record
-              raise "Invalid record class #{asset_class.name}"
-            end
 
             unless reflect_on_association(:asset_record)
               has_one :asset_record, class_name: asset_class.name, as: :asset, dependent: :destroy

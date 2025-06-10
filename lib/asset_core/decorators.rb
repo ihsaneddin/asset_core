@@ -45,5 +45,9 @@ module AssetCore
       ::AssetCore::Models::Decorators::AssetScopes
     end
 
+    def self.asset_type
+      ::AssetCore::Models::Decorators::AssetType
+    end
+
   end
 end

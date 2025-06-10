@@ -4,17 +4,20 @@ module AssetCore
 
       attr_reader :asset, :record
 
-      def self.setup_asset_scopes_proxy_methods
+      def self.setup(object)
 
         cfg = ::AssetCore::AssetScopes.scopes.dup
+        scopes = object.record.class.asset_scopes
+
         opts = {}
-        cfg.keys.each do |key|
-          opts[key] = cfg.send(key).proxy_methods.dup
+
+        cfg.keys.select{|k| scopes.include?(k) }.each do |key|
+          opts[key] = cfg.send(key).proxy.functions
         end
 
         cfg = cfg.class.new(values: opts)
 
-        define_method :config do
+        object.singleton_class.define_method :config do
           return @_asset_scopes if @_asset_scopes
           cfg.set_context(self)
           @_asset_scopes = cfg
@@ -22,42 +25,42 @@ module AssetCore
         end
 
         cfg.keys.each do |key|
-          define_method(key) do |*args|
+          object.singleton_class.define_method(key) do |*args|
             config.send(key, *args)
           end
         end
 
         ::AssetCore::State.descendants.each do |sub|
 
-          define_method("#{sub.state_name}_state".to_sym) do
+          object.singleton_class.define_method("#{sub.state_name}_state".to_sym) do
             record.send("current_#{sub.state_name}_state")
           end
 
-          define_method("#{sub.state_name}_state_label".to_sym) do
+          object.singleton_class.define_method("#{sub.state_name}_state_label".to_sym) do
             send("#{sub.state_name}_state").try(:state_label)
           end
 
-          define_method("#{sub.state_name}_state_name".to_sym) do
+          object.singleton_class.define_method("#{sub.state_name}_state_name".to_sym) do
             send("#{sub.state_name}_state").try(:state_name)
           end
 
-          define_method("#{sub.state_name}_state_index".to_sym) do
+          object.singleton_class.define_method("#{sub.state_name}_state_index".to_sym) do
             send("#{sub.state_name}_state").try(:index)
           end
 
-          define_method("previous_#{sub.state_name}_state".to_sym) do
+          object.singleton_class.define_method("previous_#{sub.state_name}_state".to_sym) do
             send("#{sub.state_name}_state").try(:previous_state)
           end
 
-          define_method("previous_#{sub.state_name}_state_label".to_sym) do
+          object.singleton_class.define_method("previous_#{sub.state_name}_state_label".to_sym) do
             send("previous_#{sub.state_name}_state").try(:state_label)
           end
 
-          define_method("previous_#{sub.state_name}_state_name".to_sym) do
+          object.singleton_class.define_method("previous_#{sub.state_name}_state_name".to_sym) do
             send("previous_#{sub.state_name}_state").try(:state_name)
           end
 
-          define_method("previous_#{sub.state_name}_state_index".to_sym) do
+          object.singleton_class.define_method("previous_#{sub.state_name}_state_index".to_sym) do
             send("previous_#{sub.state_name}_state").try(:index)
           end
 
@@ -65,11 +68,11 @@ module AssetCore
       end
 
       def initialize asset
-        self.class.setup_asset_scopes_proxy_methods
         @asset = asset
         assoc = @asset.association(:asset_record)
         @record = assoc.reader if assoc.loaded?
         @record ||= assoc.target || assoc.build()
+        self.class.setup(self)
       end
 
       def record

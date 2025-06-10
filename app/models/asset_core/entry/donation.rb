@@ -43,21 +43,21 @@ module AssetCore
 
     custom_attributes_definition :data, Attributes
 
-    define_asset_scopes :acquisition do
-      acquisition do
-        entry_methods do
-          acquisition_value do
-            data.estimated_value
-          end
-          acquisition_value_currency do
-            data.currency
-          end
-          acquisition_date do
-            data.date
-          end
-        end
-      end
-    end
+    define_asset_scopes :acquisition #do
+    #   acquisition do
+    #     entry_methods do
+    #       acquisition_value do
+    #         data.estimated_value
+    #       end
+    #       acquisition_value_currency do
+    #         data.currency
+    #       end
+    #       acquisition_date do
+    #         data.date
+    #       end
+    #     end
+    #   end
+    # end
 
 
   end

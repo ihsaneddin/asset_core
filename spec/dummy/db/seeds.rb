@@ -50,7 +50,7 @@ Invoice.asset_entry_reference do
 end
 
 #should create purchase entry for asset
-entry = asset.asset_record.purchase_entries.create(
+purchase = asset.asset_record.purchase_entries.create(
   use_reference_data: true,
   reference: Invoice.create(
     date: Date.today,
@@ -62,8 +62,8 @@ entry = asset.asset_record.purchase_entries.create(
     description: "Purchase of a thing"
   )
 )
-
-unless entry.persisted?
+debugger
+unless purchase.persisted?
   raise "Test failed"
 end
 
@@ -91,7 +91,7 @@ depreciation = asset.asset_record.depreciation_entries.create(
   }
 )
 
-depreciation.net_book_value( Date.today + 1.year).to_s
+asset.asset_record.net_book_value( Date.today + 1.year).to_s
 asset.asset.depreciation.net_book_value(Date.today + 1.year)
 
 release = asset.asset_record.release_entries.create(

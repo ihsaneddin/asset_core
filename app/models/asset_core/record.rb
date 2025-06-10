@@ -1,12 +1,17 @@
 module AssetCore
   class Record < AssetCore.config.application_record_base_constant
 
+    include ::Plugins::Models::Concerns::CustomAttributes
     include ::Plugins::Models::Concerns::PolymorphicAlternative
+    include ::AssetCore.decorators.asset_type
+
+    class Attributes < ::AssetCore::Attributes
+
+    end
+
+    custom_attributes_definition :data, Attributes
 
     self.table_name = 'asset_core_records'
-
-    class_attribute :asset_type
-    self.asset_type = self.name.demodulize.underscore
 
     has_closure_tree hierarchy_table_name: 'asset_core_record_hierarchies', dependent: :destroy
 
@@ -18,6 +23,9 @@ module AssetCore
 
     accepts_nested_attributes_for :entries, allow_destroy: true
     accepts_nested_attributes_for :states, allow_destroy: true
+    accepts_nested_attributes_for :data
+
+    validates :data, store_model: true
 
     with_options if: :asset do
       before_validation on: :create do
@@ -47,7 +55,6 @@ module AssetCore
 
     def self.inherited sub
       super(sub)
-      sub.asset_type = sub.name.demodulize.underscore
     end
 
     def self.define_entry_relation(entry_class)
@@ -60,12 +67,6 @@ module AssetCore
       return if reflect_on_association(state_class.state_name.pluralize.to_sym).present?
       has_many "#{state_class.state_name}_states".to_sym, class_name: state_class.name, foreign_key: :record_id
       has_one "current_#{state_class.state_name}_state".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
-    end
-
-    def self.find_by_asset_type(name)
-      sub = subclasses.select{|sub| sub.asset_type == name.to_s}[0]
-      raise ArgumentError, "Asset type '#{name}' not found" unless sub
-      sub
     end
 
     def attributes_use_default_asset_config

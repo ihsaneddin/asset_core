@@ -88,9 +88,9 @@ module AssetCore
             after_save :set_asset_entry_data
 
             after_commit if: :asset_entry_data_changes? do
-              if asset_entry_reference_config.sync == 'sync'
-                asset_entry_reference_sync_data
-              elsif asset_entry_reference_config.sync == 'async'
+              if asset_entry_reference_config.sync_data == 'sync'
+                sync_asset_entries
+              elsif asset_entry_reference_config.sync_data == 'async'
                 AssetCore::EntryReferenceWorker.perform_at(DateTime.now, nil, 'data_sync', *[self.class.name, self.id])
               end
             end

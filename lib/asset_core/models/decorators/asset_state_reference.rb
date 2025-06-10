@@ -87,9 +87,9 @@ module AssetCore
             after_save :set_asset_state_data
 
             after_commit if: :asset_state_data_changes? do
-              if asset_state_reference_config.sync == 'sync'
-                asset_state_reference_sync_data
-              elsif asset_state_reference_config.sync == 'async'
+              if asset_state_reference_config.sync_data == 'sync'
+                sync_asset_states
+              elsif asset_state_reference_config.sync_data == 'async'
                 AssetCore::StateReferenceWorker.perform_at(DateTime.now, nil, 'data_sync', *[self.class.name, self.id])
               end
             end
