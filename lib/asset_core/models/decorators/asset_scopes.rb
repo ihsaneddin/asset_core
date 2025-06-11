@@ -8,6 +8,7 @@ module AssetCore
           base.include ::Plugins::Models::Concerns::Options::InheritableClassAttribute
           base.inheritable_class_attribute :asset_scopes
           base.extend ClassMethods
+          base.include EntryScopes
         end
 
         module ClassMethods

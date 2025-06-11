@@ -6,10 +6,9 @@ module AssetCore
 
     include ::Plugins::Models::Concerns::PolymorphicAlternative
     include ::Plugins::Models::Concerns::CustomAttributes
-    include ::AssetCore.decorators.asset_scopes
-    include ::AssetCore.decorators.asset_scopes::EntryScopes
+    include ::AssetCore.decorators.asset_entry_scopes
 
-    custom_attributes_definition :data, ::AssetCore::Attributes
+    custom_attributes_definition :data, ::AssetCore::Attributes, accessor: true
 
     self.table_name = 'asset_core_entries'
 
@@ -23,7 +22,7 @@ module AssetCore
 
     accepts_nested_attributes_for :data
 
-    validates :data, store_model: true
+    validates :data, store_model: { merge_errors: true }
 
     scope :with_record, -> (record) {
       if record.is_a?(::AssetCore::Record)

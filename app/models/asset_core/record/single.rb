@@ -7,8 +7,8 @@ module AssetCore
 
     end
 
-    define_asset_type :single, scopes: [ :acquisition, :purchase, :donation, :depreciation, :release ] do
-      purchase do
+    define_asset_type :single, scopes: [ :acquisited, :purchased, :donated, :depreciated, :released ] do
+      purchased do
         entry_callbacks do
           after_save do |entry|
             if entry.state == "approved" && entry.saved_change_to_state?
@@ -20,7 +20,7 @@ module AssetCore
           end
         end
       end
-      depreciation do
+      depreciated do
         functions do
           depreciation_schedule do |date= Date.today, period=nil|
             if depreciation_entry
@@ -39,12 +39,6 @@ module AssetCore
             else
               []
             end
-          end
-          accrued_depreciation do |date= Date.today|
-            depreciation_schedule(date).sum { |entry| entry[:value] }
-          end
-          net_book_value do |date=Date.today|
-            initial_value - accrued_depreciation(date)
           end
         end
       end

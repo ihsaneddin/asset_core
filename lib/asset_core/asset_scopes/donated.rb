@@ -1,6 +1,63 @@
 module AssetCore
   module AssetScopes
-    module Donation
+    module Donatable
+
+      extend AssetCore::AssetScopes::Entry
+
+      define_entry_scope :donation do
+        functions.setup(
+          **{
+            donation_date: proc {
+              data.date
+            },
+            estimated_value: proc {
+              data.estimated_value
+            },
+            estimated_value_currency: proc {
+              data.currency
+            }
+          }
+        )
+      end
+
+      extend AssetCore::AssetScopes::Record
+
+      define_record_scope :donated do
+        entry_scopes([:donation])
+        relationships.setup(
+          **{
+            donation_entry: [:has_one, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:donation)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
+            donation_entries: [:has_many, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:donation)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
+          }
+        )
+        callbacks.setup(**{ before_validation: nil, validate: nil, after_validation: nil, before_save: nil, after_save: nil })
+        entry_callbacks.setup(
+          **{
+            before_validation: nil, validate: nil, after_validation: nil, before_save: nil,
+            after_save: proc {|entry|
+              if entry.state == "approved" && entry.saved_change_to_state?
+                if asset
+                  asset_state = entry.asset_ownership_states.new( record: self , index_name: "owned", use_reference_data: true)
+                  asset_state.save
+                end
+              end
+            }
+          }
+        )
+        functions.setup(
+          ** {
+            donation_date: proc {
+              donation_entry&.donation_date
+            },
+            estimated_value: proc {
+              donation_entry&.estimated_value
+            },
+            donation_currency: proc {
+              donation_entry&.estimated_value_currency
+            }
+          }
+        )
+      end
 
       def self.scope_options
         {
@@ -69,8 +126,6 @@ module AssetCore
           }
         }
       end
-
-      extend ::AssetCore::AssetScopes::Core
 
     end
   end

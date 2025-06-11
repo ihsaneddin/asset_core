@@ -1,6 +1,105 @@
 module AssetCore
   module AssetScopes
-    module Depreciation
+    module Depreciated
+
+      extend AssetCore::AssetScopes::Entry
+
+      define_entry_scope :depreciation do
+        functions.setup(
+          **{
+            initial_value: proc {
+              data.try(:initial_value)
+            },
+            initial_value_currency: proc {
+              data.try(:currency)
+            },
+            start_date: proc {
+              data.try(:start_date) || record.created_at
+            },
+            residual_value: proc {
+              data.try(:residual_value)
+            },
+            expected_lifespan: proc {
+              data.try(:expected_lifespan)
+            },
+            expected_lifespan_unit: proc {
+              data.try(:expected_lifespan_unit)
+            },
+            expected_lifespan_time: proc {
+              expected_lifespan.try(expected_lifespan_unit)
+            },
+            depreciation_method: proc {
+              data.try(:depreciation_method)
+            },
+            depreciation_rate: proc {
+              data.try(:rate)
+            }
+          }
+        )
+      end
+
+      extend AssetCore::AssetScopes::Record
+
+      define_record_scope :depreciated do
+        entry_scopes([:depreciation])
+        relationships.setup(
+          **{
+            depreciation_entry: [:has_one, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:depreciation)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
+            depreciation_entries: [:has_many, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:depreciation)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
+          }
+        )
+        callbacks.setup(**{ before_validation: nil, validate: nil, after_validation: nil, before_save: nil, after_save: nil })
+        entry_callbacks.setup(
+          **{
+            before_validation: nil,
+            validate: proc { |entry|
+              if entries.by_entry_scopes("acquisition").where.not(id: entry.id).exists?
+                entry.errors.add(:type, :invalid)
+              end
+            },
+            after_validation: nil,
+            before_save: nil,
+            after_save: nil
+          }
+        )
+        functions.setup(
+          **{
+            initial_value: proc {
+              acquisition_value || depreciation_entry&.initial_value || 0
+            },
+            initial_value_currency: proc {
+              acquisition_value_currency || depreciation_entry.try(:initial_value_currency)
+            },
+            start_date: proc {
+              acquisition_date || depreciation_entry.try(:start_date)
+            },
+            residual_value: proc {
+              depreciation_entry.try(:residual_value)
+            },
+            expected_lifespan: proc {
+              depreciation_entry.try(:expected_lifespan)
+            },
+            expected_lifespan_unit: proc {
+              depreciation_entry.try(:expected_lifespan_unit)
+            },
+            expected_lifespan_time: proc {
+              expected_lifespan.try(expected_lifespan_unit)
+            },
+            depreciation_method: proc {
+              depreciation_entry.try(:depreciation_method)
+            },
+            depreciation_rate: proc {
+              depreciation_entry.try(:rate)
+            },
+            depreciation_schedule: -> (date= Date.today, period= nil) { [] } ,
+            accrued_depreciation: -> (date = Date.today) { depreciation_schedule(date).sum { |entry| entry[:value] }  },
+            net_book_value: -> (date = Date.today) { initial_value - accrued_depreciation(date) },
+            fully_depreciated?: proc { |date|
+              net_book_value(date).zero?
+            }
+          }
+        )
+      end
 
       def self.scope_options
         {
@@ -12,7 +111,7 @@ module AssetCore
             callbacks: { before_validation: nil, validate: nil, after_validation: nil, before_save: nil, after_save: nil },
             functions: {
               initial_value: proc {
-                acquisition_value || depreciation_entry&.initial_value
+                acquisition_value || depreciation_entry&.initial_value || 0
               },
               initial_value_currency: proc {
                 acquisition_value_currency || depreciation_entry.try(:initial_value_currency)
@@ -39,7 +138,7 @@ module AssetCore
                 depreciation_entry.try(:rate)
               },
               depreciation_schedule: -> (date= Date.today, period= nil) { [] } ,
-              accrued_depreciation: -> (date = Date.today) { depreciation_schedule(date: date).sum { |entry| entry[:value] }  },
+              accrued_depreciation: -> (date = Date.today) { depreciation_schedule(date).sum { |entry| entry[:value] }  },
               net_book_value: -> (date = Date.today) { initial_value - accrued_depreciation(date) },
               fully_depreciated?: proc { |date|
                 net_book_value(date).zero?
@@ -123,7 +222,7 @@ module AssetCore
                 record.try(:depreciation_schedule, date, period)
               },
               accrued_depreciation: -> (date = Date.today) {
-                record.depreciation_schedule(date).sum { |entry| entry[:value] }
+                depreciation.depreciation_schedule(date).sum { |entry| entry[:value] }
               },
               net_book_value: -> (date = Date.today) {
                 depreciation.initial_value - depreciation.accrued_depreciation(date)
@@ -135,8 +234,6 @@ module AssetCore
           }
         }
       end
-
-      extend ::AssetCore::AssetScopes::Core
 
     end
   end

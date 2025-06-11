@@ -41,11 +41,15 @@ module AssetCore
       asset_custodian::InstanceMethods
     end
 
-    def self.asset_scopes
-      ::AssetCore::Models::Decorators::AssetScopes
+    def self.asset_record_scopes
+      ::AssetCore::Models::Decorators::AssetRecordScopes
     end
 
-    def self.asset_type
+    def self.asset_entry_scopes
+      ::AssetCore::Models::Decorators::AssetEntryScopes
+    end
+
+    def self.asset_entry_type
       ::AssetCore::Models::Decorators::AssetType
     end
 

@@ -19,6 +19,8 @@ module AssetCore
             number_generator: proc { SecureRandom.hex(8) },
             tag_number_generator: proc { SecureRandom.hex(8) },
             sync_data: 'sync', # options are none, async, sync
+            quantity_unit_group_name: nil,
+            quantity_unit_group: ::AssetCore.config.asset_quantities.groups.values[:count],
             defaults: plugins_config.build(currency: nil, entry_use_reference_data: false, state_use_reference_data: false),  # ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
             entries: plugins_config.build(**::AssetCore::Entry.subclasses.inject({}) do |hash, entry_class|
               hash[entry_class.entry_name.to_sym] = entry_class.asset_record_entry_config
@@ -48,6 +50,14 @@ module AssetCore
 
             plugins_config.setup(self, 'asset_config', opts, default_opts, &block)
 
+            qty_unit_group_name = asset_config.quantity_unit_group_name
+            if qty_unit_group_name.present?
+              qty_unit_groups = :: AssetCore.config.asset_quantities.groups.dup
+              raise "Invalid quantity_unit_group_name" unless qty_unit_groups.exists?(qty_unit_group_name)
+              unit_group = qty_unit_groups.values[qty_unit_group_name].dup
+              asset_config.set!(:quantity_unit_group, unit_group)
+            end
+
             unless reflect_on_association(:asset_record)
               has_one :asset_record, class_name: asset_class.name, as: :asset, dependent: :destroy
               #has_one "asset_#{asset_class.asset_type}".to_sym, class_name: asset_class.name, as: :asset
@@ -70,6 +80,10 @@ module AssetCore
 
           def asset
             @asset_proxy ||= ::AssetCore::Models::AssetProxy.new(self)
+          end
+
+          def asset_quantity_unit_group
+            ::AssetCore::AssetQuantityGroups.groups.send(asset_config.quantity_unit_group)
           end
 
         end

@@ -1,218 +1,237 @@
-require 'byebug'
 module AssetCore
   module AssetScopes
 
-    include ::Plugins::EngineCallbacks
-    extend ::AssetCore::Configuration::ConfigBuilder
-
-    mattr_accessor :scoped_classes
-    @@scoped_classes = {}
-
-    def self.add_scoped_classes scope, klass
-      @@scoped_classes[scope.to_sym] ||= []
-      @@scoped_classes[scope.to_sym] << klass
-    end
-
-    def self.get_scoped_classes *_scopes
-      _scopes.inject([]) do |arr, scope|
-        arr + @@scoped_classes[scope.to_sym] || []
-      end
-    end
-
-    DEFAULT_OPTS = {
-      record_methods: {},
-      record_relationships: {},
-      entry_callbacks: {
+    ENTRY_SCOPE_DEFAULT_OPTS = {
+      relationships: {},
+      callbacks: {
         before_validation: nil,
         validate: nil,
         after_validation: nil,
         before_save: nil,
         after_save: nil,
       },
-      entry_methods: {},
-      proxy_methods: {}
+      functions: {},
+      requires: []
     }
 
-    mattr_accessor :default_scopes
-    # @@default_scopes = {
-    #   acquisition: {
-    #     record_relationships: {
-    #       has_one: [:acquisition_entry, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::AssetScopes.get_scoped_classes(:acquisition)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
-    #     },
-    #     entry_callbacks: {
-    #       before_validation: nil,
-    #       validate: proc {
-    #         if record.entries.by_entry_scopes("acquisition").where.not(id: id).exists?
-    #           errors.add(:type, :invalid)
-    #         end
-    #       },
-    #       after_validation: nil,
-    #       before_save: nil,
-    #       after_save: nil,
-    #     },
-    #     entry_methods: {
-    #       initial_value: 0,
-    #       initial_value_currency: "IDR"
-    #     },
-    #     proxy_methods: {
-    #       initial_value: proc {
-    #         record.acquisition_entry&.initial_value
-    #       },
-    #       initial_value_currency: proc {
-    #         record.acquisition_entry&.initial_value_currency
-    #       }
-    #     }
-    #   },
-    #   purchase: {
-    #     entry_callbacks: {
-    #       before_validation: nil,
-    #       validate: nil,
-    #       after_validation: nil,
-    #       before_save: nil,
-    #       after_save: proc {
-    #         if state == "approved" && saved_change_to_state?
-    #           if record && record.asset
-    #             asset_state = asset_ownership_states.new( record: record , index_name: "owned", use_reference_data: true)
-    #             asset_state.save
-    #           end
-    #         end
-    #       },
-    #     },
-    #     entry_methods: {
-    #       purchase_value: proc {
-    #         data.price
-    #       },
-    #       purchase_currency: proc {
-    #         data.currency
-    #       }
-    #     },
-    #     proxy_methods: {
-    #       purchase_value: proc {
-    #         record.entries.approved.by_entry_scopes("purchase").order(:effective_at, :desc).first.purchase_value
-    #       },
-    #       purchase_currency: proc {
-    #         record.entries.approved.by_entry_scopes("purchase").order(:effective_at, :desc).first.purchase_currency
-    #       }
-    #     }
-    #   },
-    #   depreciation: {
-    #     record_relationships: {
-    #       has_one: [:depreciation_entry, -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::AssetScopes.get_scoped_classes(:depreciation)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: "AssetCore::Entry", foreign_key: :record_id],
-    #     },
-    #     entry_callbacks: {
-    #       before_validation: nil,
-    #       validate: proc {
-    #         if record.entries.by_entry_scopes("depreciation").where.not(id: id).exists?
-    #           errors.add(:type, :invalid)
-    #         end
-    #       },
-    #       after_validation: nil,
-    #       before_save: nil,
-    #       after_save: nil
-    #     },
-    #     entry_methods: {
-    #       initial_value: proc {
-    #         record.acquisition_entry.try(:initial_value)
-    #       },
-    #       start_date: :created_at,
-    #       residual_value: 0,
-    #       expected_lifespan: 0,
-    #       expected_lifespan_unit: "year",
-    #       depreciation_method: "straight_line",
-    #       rate: 0
-    #     },
-    #     proxy_methods: {}
-    #   }
-    # }
+    RECORD_SCOPE_DEFAULT_OPTS = {
+      relationships: {},
+      callbacks: {
+        before_validation: nil,
+        validate: nil,
+        after_validation: nil,
+        before_save: nil,
+        after_save: nil,
+      },
+      functions: {},
+      entry_scopes: [],
+      entry_callbacks: {
+        before_validation: nil,
+        validate: nil,
+        after_validation: nil,
+        before_save: nil,
+        after_save: nil,
+      }
+    }
 
-    # def self.add_default_scope_with mod
-    #   key = mod.name.demodulize.underscore.to_sym
-    #   opts = mod.scope_options.inject({}) do |hash, (k, v)|
-    #     hash[k]= plugins_config.build(**v)
-    #     hash
-    #   end
-    #   @@default_scopes[key]= opts.dup
-    # end
+    extend ::AssetCore::Configuration::ConfigBuilder
+    include ::Plugins::EngineCallbacks
 
-    # def self.scopes
-    #   if @@_scopes.nil?
-    #     @@_scopes= plugins_config.build()
-    #     @@default_scopes.dup.each do |key, value|
-    #       opts = value.inject({}) do |hash, (k, v)|
-    #         hash[k]= plugins_config.build(**v)
-    #         hash
-    #       end
-    #       define_scope(key, opts)
-    #     end
-    #   end
-    #   @@_scopes
-    # end
-
-    mattr_accessor :scopes
-    @@scopes = plugins_config.build()
-
-
-    def self.default_scope_opts
-      opts = {}
-      DEFAULT_OPTS.inject({}) do |hash, (key, value)|
-        hash[key]= plugins_config.build(**value.dup)
+    def self.build_opts base = {}
+      opts = base.inject({}) do |hash, (key, value)|
+        if value.is_a?(Hash)
+          hash[key]= plugins_config.build(**value.dup)
+        else
+          hash[key]= value.try(:dup) || value
+        end
         hash
       end
       opts
     end
 
-    def self.setup &block
-      raise "Block is not provided" unless block_given?
-      block.arity.zero? ? instance_eval(&block) : yield(self)
-    end
-
-    def self.define_scope *args, &block
-
-      default_opts = default_scope_opts
-
-      opts = args.extract_options!
-      opts = default_opts.merge(opts)
-      scope = args[0]
-
-      unless scope
-        raise "Scope name is required"
-      end
-      if scopes.exists?(scope)
-        raise "Scope name is already exists"
-      end
-
-      config =  plugins_config.build(**opts)
-      if block_given?
-        config.with_dynamic_keys do
-          setup(&block)
-        end
-      end
-      self.scopes.add(scope.to_sym, config)
-    end
-
     module Core
 
+      def self.extended mod
+        mod.mattr_accessor :extended_by_modules
+        mod.extended_by_modules = []
+      end
+
+      def build_opts base = {}
+        ::AssetCore::AssetScopes.build_opts(base)
+      end
+
+      def extended mod
+        mod.extended_by_modules << mod
+      end
+
+    end
+
+    module Entry
       extend ::AssetCore::Configuration::ConfigBuilder
-      include ::Plugins::EngineCallbacks
+      extend ::AssetCore::AssetScopes::Core
 
       def self.extended mod
-        mod.include ::Plugins::EngineCallbacks
+        super(mod)
         mod.extend ::AssetCore::Configuration::ConfigBuilder
-        mod.before_asset_core_initialization do
-          key = mod.try(:scope_name) || mod.name.demodulize.underscore
-          opts = mod.scope_options.inject({}) do |hash, (key, val)|
-            ctx = val.inject({}) do |res, (k, v)|
-              res[k]= plugins_config.build(**v)
-              res
-            end
-            hash[key] = plugins_config.build(**ctx)
-            hash
-          end
-          ::AssetCore::AssetScopes.define_scope(key.to_sym, opts)
+        mod.mattr_accessor :entry_scope_options, :entry_scope_name
+        mod.entry_scope_name = mod.name.demodulize.underscore
+        opts = build_opts(::AssetCore::AssetScopes::ENTRY_SCOPE_DEFAULT_OPTS)
+        mod.entry_scope_options = mod.plugins_config.build(**opts)
+      end
+
+      def define_entry_scope *args, &block
+        opts = args.extract_options!
+        if args[0]
+          self.entry_scope_name = args[0]
+        end
+        unless self.entry_scope_name
+          raise "Entry scope name is required"
+        end
+
+        if block_given?
+          entry_scope_options.relationships.dynamic_keys!
+          entry_scope_options.functions.dynamic_keys!
+          entry_scope_options.setup(**opts, &block)
+          entry_scope_options.relationships.static_keys!
+          entry_scope_options.functions.static_keys!
+        else
+          entry_scope_options.setup(**opts)
         end
       end
 
     end
+
+    module Record
+      extend ::AssetCore::Configuration::ConfigBuilder
+      extend ::AssetCore::AssetScopes::Core
+
+      def self.extended mod
+        super(mod)
+        mod.extend ::AssetCore::Configuration::ConfigBuilder
+        mod.mattr_accessor :record_scope_options, :record_scope_name
+        mod.record_scope_name = mod.name.demodulize.underscore
+        opts = build_opts(::AssetCore::AssetScopes::RECORD_SCOPE_DEFAULT_OPTS)
+        mod.record_scope_options = mod.plugins_config.build(**opts)
+      end
+
+      def define_record_scope *args, &block
+        opts = args.extract_options!
+        if args[0]
+          self.record_scope_name = args[0]
+        end
+        unless self.record_scope_name
+          raise "Record scope name is required"
+        end
+
+        if block_given?
+          record_scope_options.relationships.dynamic_keys!
+          record_scope_options.functions.dynamic_keys!
+          record_scope_options.setup(**opts, &block)
+          record_scope_options.relationships.static_keys!
+          record_scope_options.functions.static_keys!
+        else
+          record_scope_options.setup(**opts)
+        end
+      end
+
+    end
+
+    mattr_accessor :_entry_scopes
+    @@_entry_scopes = plugins_config.build(**{})
+
+    def self.define_entry_scope *args, &block
+      opts = args.extract_options!
+      scope_name = args[0]
+      unless scope_name
+        raise "Scope name is required"
+      end
+
+      if entry_scopes.exists?(scope_name)
+        raise "Scope #{scope_name} is already existed"
+      end
+
+      opts = ::AssetCore::AssetScopes::ENTRY_SCOPE_DEFAULT_OPTS.merge(opts)
+
+      cfg = build_opts(**opts)
+
+      if block_given?
+        cfg.relationships.dynamic_keys!
+        cfg.functions.dynamic_keys!
+        cfg.setup(&block)
+        cfg.relationships.static_keys!
+        cfg.functions.static_keys!
+      else
+        cfg.setup(**opts)
+      end
+
+      @@_entry_scopes.add(scope_name.to_sym, cfg)
+
+    end
+
+    def self.entry_scopes
+      opts = Entries.extended_by_modules.inject({}) do |hash, mod|
+        hash[mod.scope.to_sym] = mod.entry_scope_options
+        hash
+      end
+      opts = @@_entry_scopes.values.inject(opts) do |hash, ( k,v )|
+        hash[key.to_sym] = v
+        hash
+      end
+      plugins_config.build(**opts)
+    end
+
+    def self.entry_scope_names
+      entry_scopes.keys
+    end
+
+    mattr_accessor :_record_scopes
+    @@_record_scopes = plugins_config.build(**{})
+
+    def self.define_record_scope *args, &block
+      opts = args.extract_options!
+      scope_name = args[0]
+      unless scope_name
+        raise "Scope name is required"
+      end
+
+      if record_scopes.exists?(scope_name)
+        raise "Scope #{scope_name} is already existed"
+      end
+
+      opts = ::AssetCore::AssetScopes::RECORD_SCOPE_DEFAULT_OPTS.merge(opts)
+
+      cfg = build_opts(**opts)
+
+
+      if block_given?
+        cfg.relationships.dynamic_keys!
+        cfg.functions.dynamic_keys!
+        cfg.setup(&block)
+        cfg.relationships.static_keys!
+        cfg.functions.static_keys!
+      else
+        cfg.setup(**opts)
+      end
+
+      @@_record_scopes.add(scope_name.to_sym, cfg)
+    end
+
+    def self.record_scopes
+      opts = Entries.extended_by_modules.inject({}) do |hash, mod|
+        hash[mod.scope.to_sym] = mod.record_scope_options
+        hash
+      end
+      opts = @@_record_scopes.values.inject(opts) do |hash, ( k,v )|
+        hash[key.to_sym] = v
+        hash
+      end
+      plugins_config.build(**opts)
+    end
+
+    def self.record_scope_names
+      record_scopes.keys
+    end
+
 
     Dir.glob(AssetCore::Engine.root.join("lib/asset_core/asset_scopes/**/*.rb")).each do |file|
       require_dependency file

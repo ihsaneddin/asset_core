@@ -42,20 +42,30 @@ module AssetCore
       attribute :vendor_name, :string
       attribute :vendor_address, :string
       attribute :vendor_phone_number, :string
-      attribute :quantity
+      attribute :quantity, :decimal, default: 1
+      attribute :quantity_unit, :string, default: "piece"
+      attribute :unit_price, default: 0
 
       before_validation do
         self.date ||= Date.today
       end
 
-      validates :date, timeliness: { type: :date, allow_blank: true }
+      after_validation do
+        if price
+          self.unit_price ||= price / quantity
+        end
+      end
+
+      validates :date, timeliness: { type: :date }
       validates :price, numericality: { greater_than: 0 }, allow_blank: true
+      validates :quantity, numericality: { greater_than: 0 }
+      validates :quantity_unit, presence: true
 
     end
 
-    custom_attributes_definition :data, Attributes
+    custom_attributes_definition :data, Attributes, accessor: true
 
-    define_asset_scopes :acquisition, :purchase do
+    define_asset_entry_scopes :acquisition, :purchase do
       acquisition do
         functions do
           acquisition_value do

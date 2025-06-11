@@ -43,7 +43,7 @@ module AssetCore
 
     custom_attributes_definition :data, Attributes
 
-    define_asset_scopes :acquisition #do
+    define_asset_entry_scopes :acquisition, :donation #do
     #   acquisition do
     #     entry_methods do
     #       acquisition_value do

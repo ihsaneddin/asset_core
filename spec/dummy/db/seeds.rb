@@ -47,6 +47,7 @@ Invoice.asset_entry_reference do
       currency: "RM"
     }
   end
+  sync_data "sync"
 end
 
 #should create purchase entry for asset
@@ -66,6 +67,11 @@ debugger
 unless purchase.persisted?
   raise "Test failed"
 end
+
+inv = Invoice.first
+inv.update(amount:200)
+
+debugger
 
 #should fail purchase entry for asset
 donation = asset.asset_record.purchase_entries.create(
@@ -90,7 +96,7 @@ depreciation = asset.asset_record.depreciation_entries.create(
     rate: 0.2
   }
 )
-
+debugger
 asset.asset_record.net_book_value( Date.today + 1.year).to_s
 asset.asset.depreciation.net_book_value(Date.today + 1.year)
 

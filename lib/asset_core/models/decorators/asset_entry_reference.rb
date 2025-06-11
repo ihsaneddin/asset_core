@@ -30,7 +30,6 @@ module AssetCore
             return unless ActiveRecord::Base.connection.table_exists?('asset_core_entries')
             default_opts = AssetCore::Models::Decorators::AssetEntryReference.default_options
 
-            # ::Plugins::Models::Concerns::Config.setup(self, 'asset_entry_reference_config', opts, &block)
             plugins_config.setup(self, 'asset_entry_reference_config', opts, default_opts, &block)
 
             unless reflect_on_association(:asset_entries)
@@ -85,7 +84,6 @@ module AssetCore
             attr_accessor :asset_entry_data
 
             after_initialize :set_asset_entry_data
-            after_save :set_asset_entry_data
 
             after_commit if: :asset_entry_data_changes? do
               if asset_entry_reference_config.sync_data == 'sync'
@@ -93,6 +91,7 @@ module AssetCore
               elsif asset_entry_reference_config.sync_data == 'async'
                 AssetCore::EntryReferenceWorker.perform_at(DateTime.now, nil, 'data_sync', *[self.class.name, self.id])
               end
+              set_asset_entry_data
             end
           end
 

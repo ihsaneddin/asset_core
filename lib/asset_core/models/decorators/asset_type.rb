@@ -19,9 +19,9 @@ module AssetCore
 
             self.asset_type= _type.to_sym
 
-            include(::AssetCore.decorators.asset_scopes) unless include?(::AssetCore.decorators.asset_scopes)
+            include(::AssetCore.decorators.asset_record_scopes) unless include?(::AssetCore.decorators.asset_record_scopes)
 
-            define_asset_scopes(*scopes, &block)
+            define_asset_record_scopes(*scopes, &block)
 
           end
 

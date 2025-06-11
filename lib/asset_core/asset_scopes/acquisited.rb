@@ -1,6 +1,83 @@
 module AssetCore
   module AssetScopes
-    module Acquisition
+    module Acquisited
+
+      extend AssetCore::AssetScopes::Entry
+
+      define_entry_scope :acquisition do
+        functions.setup(
+          **{
+            acquisition_value: proc {
+              data.try(:acquisition_value)
+            },
+            acquisition_value_currency: proc {
+              data.try(:acquisition_value_currency)
+            },
+            acquisition_date: proc {
+              data.try(:acquisition_date)
+            },
+            acquisition_quantity: proc {
+              data.try(:acquisition_quantity)
+            },
+            acquisition_quantity_unit: proc {
+              data.try(:acquisition_quantity_unit)
+            },
+            acquisition_method: proc {
+              self.class.entry_name
+            },
+          }
+        )
+      end
+
+      extend AssetCore::AssetScopes::Record
+
+      define_record_scope :acquisited do
+        entry_scopes([:acquisition])
+        relationships.setup(
+          **{
+            acquisition_entry: [
+              :has_one,
+              -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:acquisition)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) },
+              class_name: "AssetCore::Entry",
+              foreign_key: :record_id
+            ],
+            acquisition_entries: [
+              :has_many,
+              -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:acquisition)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) },
+              class_name: "AssetCore::Entry",
+              foreign_key: :record_id
+            ],
+          }
+        )
+        callbacks.setup(**{ before_validation: nil, validate: nil, after_validation: nil, before_save: nil, after_save: nil })
+        entry_callbacks.setup(
+          **{
+            before_validation: nil,
+            validate: proc { |entry|
+              if entries.by_entry_scopes("acquisition").where.not(id: entry.id).exists?
+                entry.errors.add(:type, :invalid)
+              end
+            },
+            after_validation: nil,
+            before_save: nil,
+            after_save: nil
+          }
+        )
+      end
+
+      module Attributes
+        include ActiveSupport::Concern
+
+        included do
+          attribute :date, :date
+
+          before_validation do
+            self.date ||= Date.today
+          end
+
+          validates :date, timeliness: { type: :date }
+        end
+      end
 
       def self.scope_options
         {
@@ -24,6 +101,9 @@ module AssetCore
               acquisition_value: proc {
                 acquisition_entry&.acquisition_value
               },
+              acquisition_per_unitvalue: proc {
+                acquisition_entry&.acquisition_per_unit_value
+              },
               acquisition_value_currency: proc {
                 acquisition_entry&.acquisition_value_currency
               },
@@ -32,7 +112,13 @@ module AssetCore
               },
               acquisition_method: proc {
                 acquisition_entry&.acquisition_method
-              }
+              },
+              acquisition_quantity: proc {
+                acquisition_entry&.acquisition_quantity
+              },
+              acquisition_quantity_unit: proc {
+                acquisition_entry&.acquisition_quantity_unit
+              },
             },
             entry_callbacks: {
               before_validation: nil,
@@ -88,8 +174,6 @@ module AssetCore
           }
         }
       end
-
-      extend ::AssetCore::AssetScopes::Core
 
     end
   end

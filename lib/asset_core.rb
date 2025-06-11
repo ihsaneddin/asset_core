@@ -16,6 +16,7 @@ module AssetCore
   autoload :Models, "asset_core/models"
   autoload :Decorators, "asset_core/decorators"
   autoload :AssetScopes, "asset_core/asset_scopes"
+  autoload :AssetQuantities, "asset_core/asset_quantities"
   autoload :Grape, "asset_core/grape"
   autoload :Errors, "asset_core/errors"
 
