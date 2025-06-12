@@ -5,33 +5,23 @@ module AssetCore
       extend AssetCore::AssetScopes::Entry
 
       define_entry_scope :purchase do
-        functions.setup(
-          **{
-            purchase_date: proc {
-              data.date
-            },
-            purchase_value: proc {
-              data.price
-            },
-            purchase_value_per_unit: proc {
-              data&.unit_price
-            },
-            purchase_quantity: proc {
-              data&.quantity
-            },
-            purchase_quantity_unit: proc {
-              data&.quantity_unit
-            },
-            purchase_currency: proc {
-              data.currency
+        requires([:quantifiable, :valuable])
+        attributes(
+          [
+            date: {
+              type: :date,
+              validates: {
+                timeliness: {type: :date}
+              }
             }
-          }
+          ]
         )
       end
 
       extend AssetCore::AssetScopes::Record
 
       define_record_scope :purchased do
+        proxy "purchase"
         entry_scopes([:purchase])
         relationships.setup(
           **{
@@ -59,22 +49,22 @@ module AssetCore
         functions.setup(
           **{
             purchase_date: proc {
-              purchase_entry&.purchase_date
+              purchase_entry&.date
             },
             purchase_value: proc {
-              purchase_entry&.purchase_price
+              purchase_entry&.value
             },
-            purchase_value_per_unit: proc {
-              purchase_entry&.purchase_value_per_unit
+            purchase_total_value: proc {
+              purchase_entry&.total_value
             },
             purchase_quantity: proc {
-              purchase_entry&.purchase_quantity
+              purchase_entry&.quantity
             },
             purchase_quantity_unit: proc {
-              purchase_entry&.purchase_quantity_unit
+              purchase_entry&.quantity_unit
             },
             purchase_currency: proc {
-              purchase_entry&.purchase_price_currency
+              purchase_entry&.currency
             }
           }
         )

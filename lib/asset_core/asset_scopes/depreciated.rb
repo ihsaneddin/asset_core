@@ -5,42 +5,58 @@ module AssetCore
       extend AssetCore::AssetScopes::Entry
 
       define_entry_scope :depreciation do
-        functions.setup(
-          **{
-            initial_value: proc {
-              data.try(:initial_value)
-            },
-            initial_value_currency: proc {
-              data.try(:currency)
-            },
-            start_date: proc {
-              data.try(:start_date) || record.created_at
-            },
-            residual_value: proc {
-              data.try(:residual_value)
-            },
-            expected_lifespan: proc {
-              data.try(:expected_lifespan)
-            },
-            expected_lifespan_unit: proc {
-              data.try(:expected_lifespan_unit)
-            },
-            expected_lifespan_time: proc {
-              expected_lifespan.try(expected_lifespan_unit)
-            },
-            depreciation_method: proc {
-              data.try(:depreciation_method)
-            },
-            depreciation_rate: proc {
-              data.try(:rate)
+        attributes([
+          iniital_value: {
+            type: :decimal,
+          },
+          start_date: {
+            type: :date,
+            validates: {
+              timeliness: { type: :date }
+            }
+          },
+          residual_value: {
+            type: :decimal,
+            default: 0,
+            validates: {
+              numericality: { greater_than_or_equal_to: 0 }
+            }
+          },
+          expected_lifespan: {
+            type: :decimal,
+            default: 0,
+            validates: {
+              numericality: { greater_than: 0 }
+            }
+          },
+          expected_lifespan_unit: {
+            type: :string,
+            default: "year",
+            validates: {
+              inclusion: { in: %w[year month day] }
+            }
+          },
+          depreciation_method: {
+            type: :string,
+            default: "",
+            validates: {
+              inclusion: { in: :depreciation_method_names }
+            }
+          },
+          depreciation_rate: {
+            type: :decimal,
+            default: 0,
+            validates: {
+              numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
             }
           }
-        )
+        ])
       end
 
       extend AssetCore::AssetScopes::Record
 
       define_record_scope :depreciated do
+        proxy "depreciation"
         entry_scopes([:depreciation])
         relationships.setup(
           **{
@@ -53,7 +69,7 @@ module AssetCore
           **{
             before_validation: nil,
             validate: proc { |entry|
-              if entries.by_entry_scopes("acquisition").where.not(id: entry.id).exists?
+              if entries.by_entry_scopes("depreciation").where.not(id: entry.id).exists?
                 entry.errors.add(:type, :invalid)
               end
             },
@@ -89,9 +105,30 @@ module AssetCore
               depreciation_entry.try(:depreciation_method)
             },
             depreciation_rate: proc {
-              depreciation_entry.try(:rate)
+              depreciation_entry.try(:depreciation_rate)
             },
-            depreciation_schedule: -> (date= Date.today, period= nil) { [] } ,
+            depreciation_schedule: -> (date= Date.today, period= nil) {
+              if depreciation_entry && record
+                calculator_class = record.asset_config.depreciation_calculator_class.constantize
+                unless calculator_class < ::AssetCore.config.depreciation_methods::Calculator
+                  raise "Invalid depreciation calculator class"
+                end
+                depreciation_method = depreciation_entry.depreciation_method
+
+                calculator_class.new(
+                  start_date: start_date,
+                  lifespan: expected_lifespan,
+                  lifespan_unit: expected_lifespan_unit,
+                  residual_value: residual_value,
+                  initial_value: initial_value,
+                  current_date: date,
+                  rate: depreciation_rate,
+                  method_name: depreciation_method
+                ).calculate(period: period)
+              else
+                []
+              end
+            } ,
             accrued_depreciation: -> (date = Date.today) { depreciation_schedule(date).sum { |entry| entry[:value] }  },
             net_book_value: -> (date = Date.today) { initial_value - accrued_depreciation(date) },
             fully_depreciated?: proc { |date|

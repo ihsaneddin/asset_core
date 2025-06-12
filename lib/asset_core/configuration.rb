@@ -1,6 +1,7 @@
 module AssetCore
   autoload :AssetScopes, "asset_core/asset_scopes"
   autoload :AssetQuantities, "asset_core/asset_quantities"
+  autoload :AssetDepreciationMethods, "asset_core/asset_depreciation_methods"
   module Configuration
     autoload :Api, "asset_core/configuration/api"
     autoload :GrapeApi, "asset_core/configuration/grape_api"
@@ -40,6 +41,9 @@ module AssetCore
 
     mattr_accessor :asset_quantities
     @@asset_quantities = ::AssetCore::AssetQuantities
+
+    mattr_accessor :asset_depreciation_methods
+    @@asset_depreciation_methods = ::AssetCore::AssetDepreciationMethods
 
   end
 end

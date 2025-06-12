@@ -52,8 +52,14 @@ module AssetCore
               if asset_record_scopes_config.send(asset_scope).exists?(:functions)
                 asset_record_scopes_config.send(asset_scope).functions.values.each do |funct, v|
                   unless method_defined?(funct)
-                    define_method(funct) do |*args|
-                      asset_record_scopes_config.send(asset_scope).functions.send(funct, *args)
+                    if v.arity > 0
+                      define_method(funct) do |*args|
+                        asset_record_scopes_config.send(asset_scope).functions.send(funct, *args)
+                      end
+                    else
+                      define_method(funct) do
+                        asset_record_scopes_config.send(asset_scope).functions.send(funct)
+                      end
                     end
                   end
                 end

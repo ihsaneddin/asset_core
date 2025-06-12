@@ -58,8 +58,14 @@ module AssetCore
               if asset_entry_scopes_config.send(asset_scope).exists?(:functions)
                 asset_entry_scopes_config.send(asset_scope).functions.values.each do |funct, v|
                   unless method_defined?(funct)
-                    define_method(funct) do |*args|
-                      asset_entry_scopes_config.send(asset_scope).functions.send(funct, *args)
+                    if v.arity > 0
+                      define_method(funct) do |*args|
+                        asset_entry_scopes_config.send(asset_scope).functions.send(funct, *args)
+                      end
+                    else
+                      define_method(funct) do
+                        asset_entry_scopes_config.send(asset_scope).functions.send(funct)
+                      end
                     end
                   end
                 end
@@ -72,6 +78,28 @@ module AssetCore
                     _scope = nil
                     _scope = builder[1] if builder[1].is_a?(Proc)
                     send(relation, rname, _scope, **options)
+                  end
+                end
+              end
+              if asset_entry_scopes_config.send(asset_scope).exists?(:attributes)
+
+                asset_entry_scopes_config.send(asset_scope).attributes.each do |att|
+                  if att.is_a?(Hash)
+                    att.each do |k, opts|
+                      args = []
+                      args << k
+                      args << opts.delete(:type)
+                      args << opts
+                      validation = opts.delete(:validates)
+                      unless attribute_types.key?(attr_key.to_s)
+                        attribute(*args)
+                      end
+                      validates(k, **validation)
+                    end
+                  elsif att.is_a?(String) || att.is_a?(Symbol)
+                    unless attribute_types.key?(attr_key.to_s)
+                      attribute attr_key
+                    end
                   end
                 end
               end

@@ -141,6 +141,10 @@ module AssetCore
     def self.inherited(subclass)
       super(subclass)
       subclass.entry_name= subclass.name.demodulize.underscore
+      @entry_names ||= Set.new
+      if @entry_names.include?(subclass.entry_name)
+        raise ArgumentError, "Duplicate entry_name '#{name}' detected for #{subclass}"
+      end
       AssetCore::Record.define_entry_relation(subclass)
       ::AssetCore::Models::Decorators::AssetEntryReference.reference_classes.each do |ref_class|
         ref_class.define_entry_subclass_relation(subclass)

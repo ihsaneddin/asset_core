@@ -5,19 +5,21 @@ module AssetCore
       extend AssetCore::AssetScopes::Entry
 
       define_entry_scope :release do
+        requires([:quantifiable_valuable])
+        attributes(
+          [
+            release_method: {
+              type: :string,
+              validates: {
+                inclusion: { in: :release_methods }
+              }
+            }
+          ]
+        )
         functions.setup(
           **{
-            release_date: proc {
-              data.date
-            },
-            release_value: proc {
-              data.release_value || 0
-            },
-            release_value_currency: proc {
-              data.release_value_currency
-            },
-            release_method: proc {
-              data.release_method
+            release_methods: proc {
+              record&.release_methods || []
             }
           }
         )
@@ -25,8 +27,9 @@ module AssetCore
 
       extend AssetCore::AssetScopes::Record
 
-      define_record_scope :purchased do
-        entry_scopes([:purchase])
+      define_record_scope :released do
+        proxy "release"
+        entry_scopes([:release])
         relationships.setup(
           ** {
             release_entry: [
@@ -70,13 +73,16 @@ module AssetCore
               release_entry&.date
             },
             release_value: proc {
-              release_entry&.release_value || 0
+              release_entry&.total_value
             },
             release_value_currency: proc {
-              release_entry&.release_value_currency
+              release_entry&.currency
             },
             release_method: proc {
               release_entry&.release_method
+            },
+            release_methods: proc {
+              %w[sale donation scrap write_off]
             },
             gain_or_loss: proc {
               if release_method.present?

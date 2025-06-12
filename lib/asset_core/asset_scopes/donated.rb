@@ -5,24 +5,28 @@ module AssetCore
       extend AssetCore::AssetScopes::Entry
 
       define_entry_scope :donation do
-        functions.setup(
-          **{
-            donation_date: proc {
-              data.date
+        requires([:quantifiable_valuable])
+        attributes(
+          [
+            :notes,
+            date: {
+              type: :date,
+              validates: {
+                timeliness: {type: :date}
+              }
             },
-            estimated_value: proc {
-              data.estimated_value
-            },
-            estimated_value_currency: proc {
-              data.currency
+            donor_name: {
+              type: :string,
+              default: "Anonymous",
             }
-          }
+          ]
         )
       end
 
       extend AssetCore::AssetScopes::Record
 
       define_record_scope :donated do
+        proxy "donation"
         entry_scopes([:donation])
         relationships.setup(
           **{
@@ -47,13 +51,13 @@ module AssetCore
         functions.setup(
           ** {
             donation_date: proc {
-              donation_entry&.donation_date
+              donation_entry&.date
             },
-            estimated_value: proc {
-              donation_entry&.estimated_value
+            donation_estimated_value: proc {
+              donation_entry&.total_value
             },
             donation_currency: proc {
-              donation_entry&.estimated_value_currency
+              donation_entry&.currency
             }
           }
         )

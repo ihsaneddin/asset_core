@@ -21,6 +21,7 @@ module AssetCore
             sync_data: 'sync', # options are none, async, sync
             quantity_unit_group_name: nil,
             quantity_unit_group: ::AssetCore.config.asset_quantities.groups.values[:count],
+            depreciation_calculator_class: AssetCore.config.asset_depreciation_methods.calculator_class,
             defaults: plugins_config.build(currency: nil, entry_use_reference_data: false, state_use_reference_data: false),  # ::Plugins::Models::Config.new({currency: nil, manufacture: nil, owner: nil, entry_use_reference_data: false, state_use_reference_data: false}),
             entries: plugins_config.build(**::AssetCore::Entry.subclasses.inject({}) do |hash, entry_class|
               hash[entry_class.entry_name.to_sym] = entry_class.asset_record_entry_config

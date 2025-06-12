@@ -150,6 +150,10 @@ module AssetCore
     def self.inherited(subclass)
       super(subclass)
       subclass.state_name= subclass.name.demodulize.underscore
+      @state_names ||= Set.new
+      if @state_names.include?(subclass.state_name)
+        raise ArgumentError, "Duplicate state_name '#{name}' detected for #{subclass}"
+      end
       subclass.states_list = states_list.dup
       AssetCore::Record.define_state_relation(subclass)
       ::AssetCore::Models::Decorators::AssetStateReference.reference_classes.each do |ref_class|

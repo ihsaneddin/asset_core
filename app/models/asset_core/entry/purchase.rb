@@ -36,50 +36,21 @@ module AssetCore
     class Attributes < AssetCore::Attributes
 
       attribute :date, :date
-      attribute :price, :decimal, default: 0.0
+      attribute :value, :decimal, default: 0.0
+      attribute :total_value, :decimal, default: 0.0
+      attribute :quantity, :decimal, default: 1
+      attribute :quantity_unit, :string
       attribute :currency, :string
       attribute :invoice_number, :string
       attribute :vendor_name, :string
       attribute :vendor_address, :string
       attribute :vendor_phone_number, :string
-      attribute :quantity, :decimal, default: 1
-      attribute :quantity_unit, :string, default: "piece"
-      attribute :unit_price, default: 0
-
-      before_validation do
-        self.date ||= Date.today
-      end
-
-      after_validation do
-        if price
-          self.unit_price ||= price / quantity
-        end
-      end
-
-      validates :date, timeliness: { type: :date }
-      validates :price, numericality: { greater_than: 0 }, allow_blank: true
-      validates :quantity, numericality: { greater_than: 0 }
-      validates :quantity_unit, presence: true
 
     end
 
     custom_attributes_definition :data, Attributes, accessor: true
 
-    define_asset_entry_scopes :acquisition, :purchase do
-      acquisition do
-        functions do
-          acquisition_value do
-            data.price
-          end
-          acquisition_value_currency do
-            data.currency
-          end
-          acquisition_date do
-            data.date
-          end
-        end
-      end
-    end
+    define_asset_entry_scopes :acquisition, :purchase
 
   end
 end

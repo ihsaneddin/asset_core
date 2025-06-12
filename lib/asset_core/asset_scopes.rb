@@ -11,6 +11,7 @@ module AssetCore
         after_save: nil,
       },
       functions: {},
+      attributes: [],
       requires: []
     }
 
@@ -31,7 +32,8 @@ module AssetCore
         after_validation: nil,
         before_save: nil,
         after_save: nil,
-      }
+      },
+      proxy: nil
     }
 
     extend ::AssetCore::Configuration::ConfigBuilder

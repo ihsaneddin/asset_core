@@ -22,9 +22,11 @@ module AssetCore
     class Attributes < AssetCore::Attributes
 
       attribute :date, :date
+      attribute :value, :decimal, default: 0.0
+      attribute :total_value, :decimal, default: 0.0
+      attribute :quantity, :decimal, default: 1
+      attribute :quantity_unit, :string
       attribute :release_method, :string
-      attribute :release_value, :decimal, default: 0.0
-      attribute :currency, :string
       attribute :reason, :string
 
       before_validation do
@@ -37,13 +39,9 @@ module AssetCore
       validates :release_method, presence: true, inclusion: { in: %w[sale donation scrap write_off] }
       validates :release_value, numericality: { greater_than_or_equal_to: 0 }, if: :sold?
 
-      def sold?
-        release_method == "sale"
-      end
-
     end
 
-    custom_attributes_definition :data, Attributes
+    custom_attributes_definition :data, Attributes, accessor: true
 
     define_asset_scopes :release
 

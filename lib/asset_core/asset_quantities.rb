@@ -59,7 +59,7 @@ module AssetCore
 
     end
 
-    def define_quantity_group *args, &block
+    def self.define_quantity_group *args, &block
       opts = args.extract_options!
       group = args[0]
 
@@ -81,9 +81,9 @@ module AssetCore
       @@_groups.add(group.to_sym, config)
     end
 
-    def groups
+    def self.groups
       opts = Core.extended_by_modules.inject({}) do |hash, mod|
-        hash[mod.scope.to_sym] = mod.options
+        hash[mod.quantity_group_name.to_sym] = mod.options
         hash
       end
       opts = @@_groups.values.inject(opts) do |hash, ( k,v )|
