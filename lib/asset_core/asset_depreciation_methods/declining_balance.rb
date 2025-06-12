@@ -3,12 +3,12 @@ module AssetCore
     module DecliningBalance
       extend ::AssetCore::AssetDepreciationMethods::Core
 
-      def self.calculate(period=nil)
+      def calculate(period=nil)
         entries = calculate_entries
         period ? group_by_period(entries, period) : entries
       end
 
-      def self.calculate_entries(*args)
+      def calculate_entries(*args)
         raise ArgumentError, "Rate must be present for declining balance method" unless rate
         entries = []
         current_value = initial_value

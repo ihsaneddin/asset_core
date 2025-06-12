@@ -95,7 +95,9 @@ module AssetCore
               end
             }
           },
-          entry_callbacks: {
+        )
+        entry_callbacks.setup(
+          **{
             before_validation: nil,
             validate: proc { |entry|
               if entries.by_entry_scopes("release").where.not(id: entry.id).exists?
@@ -111,7 +113,7 @@ module AssetCore
                   asset_state.save && asset_state.approve!
                 end
               end
-            },
+            }
           }
         )
       end

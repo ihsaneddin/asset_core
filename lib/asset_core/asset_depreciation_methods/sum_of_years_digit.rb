@@ -3,13 +3,12 @@ module AssetCore
     module SumOfYearsDigit
       extend ::AssetCore::AssetDepreciationMethods::Core
 
-      def self.calculate_entries(*args)
+      def calculate_entries(*args)
         total_value = initial_value - residual_value
         n = total_periods
         denominator = (n * (n + 1)) / 2.0
 
         entries = []
-
         period_intervals.each do |index|
           date = advance_time(index)
           break if date >= current_date

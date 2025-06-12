@@ -171,8 +171,8 @@ module AssetCore
     end
 
     def self.entry_scopes
-      opts = Entries.extended_by_modules.inject({}) do |hash, mod|
-        hash[mod.scope.to_sym] = mod.entry_scope_options
+      opts = Entry.extended_by_modules.inject({}) do |hash, mod|
+        hash[mod.entry_scope_name.to_sym] = mod.entry_scope_options
         hash
       end
       opts = @@_entry_scopes.values.inject(opts) do |hash, ( k,v )|
@@ -219,8 +219,8 @@ module AssetCore
     end
 
     def self.record_scopes
-      opts = Entries.extended_by_modules.inject({}) do |hash, mod|
-        hash[mod.scope.to_sym] = mod.record_scope_options
+      opts = Record.extended_by_modules.inject({}) do |hash, mod|
+        hash[mod.record_scope_name.to_sym] = mod.record_scope_options
         hash
       end
       opts = @@_record_scopes.values.inject(opts) do |hash, ( k,v )|

@@ -6,6 +6,8 @@ class CreateInvoices < ActiveRecord::Migration[7.0]
       t.string :number
       t.date :date
       t.decimal :amount, precision: 10, scale: 6
+      t.integer :quantity, default: 1
+      t.decimal :total_amount, precision: 10, scale: 6
       t.string :currency, default: "RM"
       t.text :description
       t.timestamps

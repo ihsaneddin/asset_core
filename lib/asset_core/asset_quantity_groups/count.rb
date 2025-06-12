@@ -1,8 +1,8 @@
 module AssetCore
-  module AssetQuantityGroups
+  module AssetQuantities
     module Count
 
-      extend Core
+      extend ::AssetCore::AssetQuantities::Core
 
       def base_unit
         "unit"

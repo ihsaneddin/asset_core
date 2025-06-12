@@ -17,8 +17,6 @@ module AssetCore
 
         def self.default_options
           {
-            index: nil,
-            remark: nil,
             data: {},
             sync_data: 'none', # options are none, async, syncsync_data
           }
@@ -97,16 +95,12 @@ module AssetCore
 
           def set_asset_state_data
             self.asset_state_data = {
-              index: asset_state_reference_config_index,
-              remark: asset_state_reference_config_remark,
               data: asset_state_reference_config_data
             }
           end
 
           def asset_state_data_changes?
             current_asset_state_data = {
-              index: asset_state_reference_config_index,
-              remark: asset_state_reference_config_remark,
               data: asset_state_reference_config_data
             }
             !(Hashdiff.diff(current_asset_state_data, asset_state_data).empty?)

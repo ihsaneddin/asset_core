@@ -13,7 +13,8 @@ module AssetCore
             type: :date,
             validates: {
               timeliness: { type: :date }
-            }
+            },
+            allow_blank: true
           },
           residual_value: {
             type: :decimal,
@@ -51,6 +52,24 @@ module AssetCore
             }
           }
         ])
+        functions.setup(
+          **{
+            depreciation_method_names: proc {
+              if record
+                record.available_depreciation_methods
+              else
+                []
+              end
+            }
+          }
+        )
+        callbacks.setup(
+          **{
+            before_validation: proc {
+
+            }
+          }
+        )
       end
 
       extend AssetCore::AssetScopes::Record
@@ -80,14 +99,17 @@ module AssetCore
         )
         functions.setup(
           **{
+            available_depreciation_methods: proc {
+              ::AssetCore::AssetDepreciationMethods.calculate_methods.keys.map(&:to_s)
+            },
             initial_value: proc {
-              acquisition_value || depreciation_entry&.initial_value || 0
+              depreciation_entry&.initial_value || 0
             },
             initial_value_currency: proc {
-              acquisition_value_currency || depreciation_entry.try(:initial_value_currency)
+              asset.asset_config.defaults.currency
             },
-            start_date: proc {
-              acquisition_date || depreciation_entry.try(:start_date)
+            depreciation_start_date: proc {
+              depreciation_entry&.start_date
             },
             residual_value: proc {
               depreciation_entry.try(:residual_value)
@@ -108,15 +130,16 @@ module AssetCore
               depreciation_entry.try(:depreciation_rate)
             },
             depreciation_schedule: -> (date= Date.today, period= nil) {
-              if depreciation_entry && record
-                calculator_class = record.asset_config.depreciation_calculator_class.constantize
-                unless calculator_class < ::AssetCore.config.depreciation_methods::Calculator
-                  raise "Invalid depreciation calculator class"
+              if depreciation_entry
+                calculator_class = asset.asset_config.depreciation_calculator_class.constantize
+                if calculator_class != ::AssetCore.config.asset_depreciation_methods::Calculator
+                  unless calculator_class < ::AssetCore.config.asset_depreciation_methods::Calculator
+                    raise "Invalid depreciation calculator class"
+                  end
                 end
                 depreciation_method = depreciation_entry.depreciation_method
-
                 calculator_class.new(
-                  start_date: start_date,
+                  start_date: depreciation_start_date,
                   lifespan: expected_lifespan,
                   lifespan_unit: expected_lifespan_unit,
                   residual_value: residual_value,

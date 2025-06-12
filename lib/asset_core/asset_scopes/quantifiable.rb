@@ -30,8 +30,8 @@ module AssetCore
               errors.add(:quantity_unit_group, :invalid) unless quantity_unit_group
             },
             after_validation: proc{
-              self.quantity= quantity_unit_group.try(:conversion, quantity_unit, quantity_unit_group.base_unit)
-              self.quantity_unit= quantity_unit_group.try(:base_unit)
+              self.quantity= quantity_unit_group.conversion(quantity, quantity_unit, quantity_unit_group.base_unit)
+              self.quantity_unit= quantity_unit_group.base_unit
             }
           }
         )

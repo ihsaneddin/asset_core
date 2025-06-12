@@ -70,9 +70,8 @@ module AssetCore
       _data = reference_config_options()
       self.number = _data[:number]
       self.description = _data[:description]
-      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", data_atts[att.to_sym]) #if self.data.send(att).nil?
+        self.send("#{att}=", _data[att.to_sym]) #if self.data.send(att).nil?
       end
     end
 
@@ -85,9 +84,8 @@ module AssetCore
       _data = record_asset_config_options
       self.number ||= _data[:number]
       self.description ||= _data[:description]
-      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", data_atts[att.to_sym]) if self.data.send(att).nil?
+        self.send("#{att}=", _data[att.to_sym]) if self.send(att).nil?
       end
     end
 
@@ -104,12 +102,11 @@ module AssetCore
           unless record.asset.asset_config.entries.send(entry_name).use_reference_data.nil?
             hash[:use_reference_data] = record.asset.asset_config.entries.send(entry_name).use_reference_data
           end
-          hash[:data] = {}
           data_class = self.class.attribute_types['data'].model_klass
           data_class.assignable_attributes.each do |att|
-            hash[:data][att.to_sym] = record.asset.asset_config.entries.send(entry_name).data.send(att)
+            hash[att.to_sym] = record.asset.asset_config.entries.send(entry_name).send(att)
             if att.to_sym == :currency
-              hash[:data][att.to_sym] ||= hash[:currency]
+              hash[att.to_sym] ||= hash[:currency]
             end
           end
         end
@@ -122,15 +119,16 @@ module AssetCore
       return @reference_config_options if @reference_config_options
       if reference && valid_reference?
         hash = {}
-        hash[:number] = reference.asset_entry_reference_config.number
-        hash[:description] = reference.asset_entry_reference_config.description
-        hash[:data] = {}
         ref_data = reference.asset_entry_reference_config.data || {}
         data_class = self.class.attribute_types['data'].model_klass
+        hash[:number] = ref_data[:index]
+        hash[:description] = ref_data[:remark]
+        hash[:number] ||= reference.asset_entry_reference_config.data[:number]
+        hash[:description] ||= reference.asset_entry_reference_config.data[:description]
         data_class.assignable_attributes.each do |att|
-          hash[:data][att.to_sym] = ref_data[att.to_sym]
+          hash[att.to_sym] = ref_data[att.to_sym]
           if att.to_sym == :currency
-            hash[:data][att.to_sym] ||= record.asset.asset_config_defaults.currency
+            hash[att.to_sym] ||= record.asset.asset_config_defaults.currency
           end
         end
         @reference_config_options = hash
@@ -160,8 +158,8 @@ module AssetCore
         number: nil,
         description: nil,
         use_reference_data: nil,
-        data: plugins_config.build(**data_opts)
       }
+      opts.merge!(data_opts)
       plugins_config.build(**opts)
     end
 

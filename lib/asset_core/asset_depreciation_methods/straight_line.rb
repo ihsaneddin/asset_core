@@ -3,7 +3,7 @@ module AssetCore
     module StraightLine
       extend ::AssetCore::AssetDepreciationMethods::Core
 
-      def self.calculate_entries(*args)
+      def calculate_entries(*args)
         total = initial_value.to_d - residual_value.to_d
         monthly = (total / total_months).round(2)
 

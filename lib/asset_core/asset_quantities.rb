@@ -11,23 +11,38 @@ module AssetCore
       base_unit: "unit",
       units: [{name: "unit", label: "Unit", factor: 1}],
       conversion: proc { |qty, from_unit, to_unit, precision=0|
-        from_factor = units.find { |u| u[:name].to_s == from.to_s }&.dig(:factor)
-        to_factor   = units.find { |u| u[:name].to_s == to.to_s }&.dig(:factor)
-        raise "Unknown unit(s)" unless from_factor && to_factor
+        from_factor = units.find { |u| u[:name].to_s == from_unit.to_s }&.dig(:factor)
+        to_factor   = units.find { |u| u[:name].to_s == to_unit.to_s }&.dig(:factor)
+        unless from_factor && to_factor
+          warn "Unknown unit(s)"
+          qty
+        else
+          qty * (from_factor / to_factor)
+        end
 
-        qty * (from_factor / to_factor)
       }
     }
 
     module Core
 
+      mattr_accessor :extended_by_modules
+      @@extended_by_modules = []
+
       def self.extended mod
         mod.mattr_accessor :extended_by_modules
-        mod.extended_by_modules = []
-        mod.extended_by_modules << mod
+        extended_by_modules << mod
         mod.mattr_accessor :quantity_group_name, :options
         mod.quantity_group_name = mod.name.demodulize.underscore.to_sym
-        mod.options = ::AssetCore::AssetQuantities.plugins_config(**{base_unit: :base_unit, units: :units, conversion: :conversion})
+        mod.options = ::AssetCore::AssetQuantities.plugins_config.build(**{base_unit: :base_unit, units: :units, conversion: :conversion})
+        # mod.define_method :base_unit do
+        #   ::AssetCore::AssetQuantities::DEFAULT_OPTIONS[:base_unit]
+        # end
+        # mod.define_method :units do
+        #   ::AssetCore::AssetQuantities::DEFAULT_OPTIONS[:units]
+        # end
+        # mod.define_method :conversion do |qty, from= nil, to= nil, precision= 0|
+        #   instance_exec(qty, from, to, precision, &::AssetCore::AssetQuantities::DEFAULT_OPTIONS[:conversion])
+        # end
       end
 
       def define_quantity_group *args, &block
@@ -53,8 +68,8 @@ module AssetCore
         ::AssetCore::AssetQuantities::DEFAULT_OPTIONS[:units]
       end
 
-      def convert qty, from= nil, to= nil, precision= 0
-        ::AssetCore::AssetQuantities::DEFAULT_OPTIONS[:conversion].call(qty, from, to, precision)
+      def conversion qty, from= nil, to= nil, precision= 0
+        instance_exec(qty, from, to, precision, &::AssetCore::AssetQuantities::DEFAULT_OPTIONS[:conversion])
       end
 
     end
@@ -83,7 +98,17 @@ module AssetCore
 
     def self.groups
       opts = Core.extended_by_modules.inject({}) do |hash, mod|
-        hash[mod.quantity_group_name.to_sym] = mod.options
+        options = mod.options.dup
+        if options.values[:base_unit].is_a?(Symbol)
+          options.set(:base_unit, mod.method(:base_unit).to_proc)
+        end
+        if options.values[:units].is_a?(Symbol)
+          options.set(:units, mod.method(:units).to_proc)
+        end
+        if options.values[:conversion].is_a?(Symbol)
+          options.set(:conversion, mod.method(:conversion).to_proc)
+        end
+        hash[mod.quantity_group_name.to_sym] = options
         hash
       end
       opts = @@_groups.values.inject(opts) do |hash, ( k,v )|

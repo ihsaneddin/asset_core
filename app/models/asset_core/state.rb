@@ -85,9 +85,8 @@ module AssetCore
       _data = reference_config_options()
       self.index = _data[:index]
       self.remark = _data[:remark]
-      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", data_atts[att.to_sym]) #if self.data.send(att).nil?
+        self.send("#{att}=", data[att.to_sym]) #if self.data.send(att).nil?
       end
     end
 
@@ -100,9 +99,8 @@ module AssetCore
       _data = record_asset_config_options
       self.index ||= _data[:index]
       self.remark ||= _data[:remark]
-      data_atts = _data[:data] || {}
       self.data.class.assignable_attributes.each do |att|
-        self.data.send("#{att}=", data_atts[att.to_sym]) if self.data.send(att).nil?
+        self.send("#{att}=", data[att.to_sym]) if self.send(att).nil?
       end
     end
 
@@ -119,10 +117,9 @@ module AssetCore
           unless record.asset.asset_config.states.send(state_name).use_reference_data.nil?
             hash[:use_reference_data] = record.asset.asset_config.states.send(state_name).use_reference_data
           end
-          hash[:data] = {}
           data_class = self.class.attribute_types['data'].model_klass
           data_class.assignable_attributes.each do |att|
-            hash[:data][att.to_sym] = record.asset.asset_config.states.send(state_name).data.send(att)
+            hash[att.to_sym] = record.asset.asset_config.states.send(state_name).send(att)
           end
         end
         @record_asset_config_options = hash
@@ -134,13 +131,14 @@ module AssetCore
       return @reference_config_options if @reference_config_options
       if reference && valid_reference?
         hash = {}
-        hash[:index] = reference.asset_state_reference_config.index
-        hash[:remark] = reference.asset_state_reference_config.remark
-        hash[:data] = {}
         ref_data = reference.asset_state_reference_config.data || {}
+        hash[:index] = ref_data[:index]
+        hash[:remark] = ref_data[:remark]
+        hash[:index] ||= reference.asset_state_reference_config.index
+        hash[:remark] ||= reference.asset_state_reference_config.remark
         data_class = self.class.attribute_types['data'].model_klass
         data_class.assignable_attributes.each do |att|
-          hash[:data][att.to_sym] = ref_data[att.to_sym]
+          hash[att.to_sym] = ref_data[att.to_sym]
         end
         @reference_config_options = hash
       end
@@ -171,9 +169,8 @@ module AssetCore
         remark: nil,
         use_reference_data: nil,
         states_list: states_list,
-        data: plugins_config.build(**data_opts)
       }
-      plugins_config.build(**opts)
+      plugins_config.build(**opts.merge(data_opts))
     end
 
     def self.find_by_state_name(name)

@@ -15,7 +15,7 @@ module AssetCore
 
     end
 
-    custom_attributes_definition :data, ::AssetCore::State::Ownership::Attributes
+    custom_attributes_definition :data, ::AssetCore::State::Ownership::Attributes, accessor: true
 
     self.states_list = [
       { name: "owned",        label: "Owned",        owned: true, default: true  },

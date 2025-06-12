@@ -36,14 +36,14 @@ asset.create_asset_record
 
 #create asset purchase entry using invoice
 Invoice.asset_entry_reference do
-  number do
-    "Invoice ##{number}"
-  end
-  description :description
   data do
     {
+      number: "Invoice ##{number}",
+      description: description,
       date: date,
-      price: amount,
+      value: amount,
+      quantity: quantity,
+      quantity_unit: "unit",
       currency: "RM"
     }
   end
@@ -60,6 +60,7 @@ purchase = asset.asset_record.purchase_entries.create(
     number: SecureRandom.hex(8),
     amount: 100,
     currency: "RM",
+    quantity: 1,
     description: "Purchase of a thing"
   )
 )
@@ -76,11 +77,10 @@ debugger
 #should fail purchase entry for asset
 donation = asset.asset_record.purchase_entries.create(
   use_reference_data: true,
-  data_attributes: {
-    date: Date.today,
-    estimated_value: 100,
-    currency: "RM"
-  }
+  date: Date.today,
+  value: 100,
+  currency: "RM",
+  quantity: 1
 )
 
 if donation.persisted?
@@ -88,17 +88,15 @@ if donation.persisted?
 end
 
 depreciation = asset.asset_record.depreciation_entries.create(
-  data_attributes: {
-    expected_lifespan: 5,
-    expected_lifespan_unit: "year",
-    depreciation_method: "sum_of_years_digit",
-    residual_value: 5,
-    rate: 0.2
-  }
+  expected_lifespan: 5,
+  expected_lifespan_unit: "year",
+  depreciation_method: "sum_of_years_digit",
+  residual_value: 5,
+  rate: 0.2
 )
 debugger
 asset.asset_record.net_book_value( Date.today + 1.year).to_s
-asset.asset.depreciation.net_book_value(Date.today + 1.year)
+asset.asset.net_book_value(Date.today + 1.year)
 
 release = asset.asset_record.release_entries.create(
   data_attributes: {

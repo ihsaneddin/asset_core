@@ -8,17 +8,24 @@ module AssetCore
     @@_methods = plugins_config.build(**{})
 
     mattr_accessor :calculator_class
-    @@calculator_class = "AssetCore::Depreciation::Calculator"
+    @@calculator_class = "AssetCore::AssetDepreciationMethods::Calculator"
 
     module Core
+      mattr_accessor :extended_by_modules
+      @@extended_by_modules = []
 
       def self.extended mod
-        mod.mattr_accessor :extended_by_modules
-        mod.extended_by_modules = []
         mod.extended_by_modules << mod
         mod.mattr_accessor :method_name, :options
         mod.method_name = mod.name.demodulize.underscore.to_sym
-        mod.options = ::AssetCore::AssetDepreciationMethods.plugins_config(**{calculate: :calculate, calculate_entries: :calculate_entries})
+        mod.options = ::AssetCore::AssetDepreciationMethods.plugins_config.build(**{calculate: :calculate, calculate_entries: :calculate_entries})
+        mod.define_method :calculate do |period=ni|
+          entries = calculate_entries
+          period ? group_by_period(entries, period) : entries
+        end
+        mod.define_method :calculate_entries do |*args|
+          []
+        end
       end
 
       def define_depreciation_method *args, &block
@@ -34,15 +41,6 @@ module AssetCore
         else
           options.setup(**opts)
         end
-      end
-
-      def calculate(period= nil)
-        entries = calculate_entries
-        period ? group_by_period(entries, period) : entries
-      end
-
-      def calculate_entries(*args)
-        []
       end
 
     end
@@ -75,16 +73,16 @@ module AssetCore
       @@_methods.add(method_name.to_sym, config)
     end
 
-    def calculate_methods
+    def self.calculate_methods
       opts = Core.extended_by_modules.inject({}) do |hash, mod|
         options = mod.options.dup
         if options.values[:calculate].is_a?(Symbol)
-          options.set(:calculate, mod.method(:calculate).to_proc)
+          options.set(:calculate, mod.instance_method(:calculate))
         end
         if options.values[:calculate_entries].is_a?(Symbol)
-          options.set(:calculate, mod.method(:calculate_entries).to_proc)
+          options.set(:calculate, mod.instance_method(:calculate_entries))
         end
-        hash[mod.scope.to_sym] = options
+        hash[mod.method_name.to_sym] = options
         hash
       end
       opts = @@_methods.values.inject(opts) do |hash, ( k,v )|
@@ -110,8 +108,9 @@ module AssetCore
       end
 
       def set_depreciation_method
-        @depreciation_method ||= ::AssetCore::AssetDepreciationMethods.calculate_methods[method_name.to_sym]
+        @depreciation_method ||= ::AssetCore::AssetDepreciationMethods.calculate_methods[method_name.to_sym].dup
         raise "Depreciation method #{method_name} not found" if @depreciation_method.nil?
+        @depreciation_method.set_context(self)
         @depreciation_method
       end
 
@@ -175,15 +174,11 @@ module AssetCore
       end
 
       def calculate(period= nil)
-        depreciation_method.with_context(self) do
-          calculate(period)
-        end
+        depreciation_method.calculate(period)
       end
 
       def calculate_entries(*args)
-        depreciation_method.with_context(self) do
-          calculate_entries(*args)
-        end
+        depreciation_method.calculate_entries(*args)
       end
 
       def group_by_period(entries, period)

@@ -5,7 +5,7 @@ module AssetCore
       extend AssetCore::AssetScopes::Entry
 
       define_entry_scope :purchase do
-        requires([:quantifiable, :valuable])
+        requires([:quantifiable_valuable])
         attributes(
           [
             date: {

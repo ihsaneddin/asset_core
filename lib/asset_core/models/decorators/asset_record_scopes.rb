@@ -1,14 +1,14 @@
 module AssetCore
   module Models
     module Decorators
-      module AssetRecodScopes
+      module AssetRecordScopes
 
         mattr_accessor :record_scopes_classes
-        @@record_scopes_classes = []
+        @@record_scopes_classes = {}
 
-        def self.get_record_class_with_scopes key, klass
-          @@record_scopes_classes[scope.to_sym] ||= []
-          @@record_scopes_classes[scope.to_sym] << klass
+        def self.add_record_class_to_scope key, klass
+          @@record_scopes_classes[key.to_sym] ||= []
+          @@record_scopes_classes[key.to_sym] << klass
         end
 
         def self.get_record_class_with_scopes *_scopes
@@ -29,7 +29,7 @@ module AssetCore
           def define_asset_record_scopes *args, &block
             return if args.blank?
             scopes = args.map(&:to_sym)
-            scopes_config = ::AssetCore.config.asset_record_scopes.record_scopes.dup
+            scopes_config = ::AssetCore.config.asset_scopes.record_scopes.dup
             opts = {}
             scopes.each do |scp|
               raise "Scope #{scp} not found" unless scopes_config.exists?(scp)
@@ -41,7 +41,7 @@ module AssetCore
             self.asset_record_scopes= config.values.keys.map(&:to_sym)
 
             self.asset_record_scopes.each do |asset_scope|
-              ::AssetCore::Models::Decorators:AssetRecodScopes.add_record_class_to_scope(asset_scope, self.name)
+              ::AssetCore::Models::Decorators::AssetRecordScopes.add_record_class_to_scope(asset_scope, self.name)
               if asset_record_scopes_config.send(asset_scope).exists?(:callbacks)
                 asset_record_scopes_config.send(asset_scope).callbacks.values.each do |callback, v|
                   send callback do
@@ -52,14 +52,8 @@ module AssetCore
               if asset_record_scopes_config.send(asset_scope).exists?(:functions)
                 asset_record_scopes_config.send(asset_scope).functions.values.each do |funct, v|
                   unless method_defined?(funct)
-                    if v.arity > 0
-                      define_method(funct) do |*args|
-                        asset_record_scopes_config.send(asset_scope).functions.send(funct, *args)
-                      end
-                    else
-                      define_method(funct) do
-                        asset_record_scopes_config.send(asset_scope).functions.send(funct)
-                      end
+                    define_method(funct) do |*args|
+                      asset_record_scopes_config.send(asset_scope).functions.send(funct, *args)
                     end
                   end
                 end
@@ -76,6 +70,8 @@ module AssetCore
                 end
               end
             end
+
+            include(InstanceMethods) unless include?(InstanceMethods)
           end
 
           def included_in_scopes?(*scopes)
@@ -104,6 +100,7 @@ module AssetCore
               if scopes.map(&:to_s).include?(scope.to_s)
                 arr << config.entry_callbacks
               end
+              arr
             end
             result
           end

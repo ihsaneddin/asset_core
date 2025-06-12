@@ -58,15 +58,23 @@ module AssetCore
     end
 
     def self.define_entry_relation(entry_class)
-      return if reflect_on_association(entry_class.entry_name.pluralize.to_sym).present?
-      has_many "#{entry_class.entry_name}_entries".to_sym, class_name: entry_class.name, foreign_key: :record_id
-      has_one "current_#{entry_class.entry_name}_entry".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: entry_class.name, foreign_key: :record_id
+      unless reflect_on_association(entry_class.entry_name.pluralize.to_sym).present?
+        has_many "#{entry_class.entry_name}_entries".to_sym, class_name: entry_class.name, foreign_key: :record_id
+        has_one "current_#{entry_class.entry_name}_entry".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: entry_class.name, foreign_key: :record_id
+      end
+      subclasses.each do |sub|
+        sub.define_entry_relation(entry_class)
+      end
     end
 
     def self.define_state_relation(state_class)
-      return if reflect_on_association(state_class.state_name.pluralize.to_sym).present?
-      has_many "#{state_class.state_name}_states".to_sym, class_name: state_class.name, foreign_key: :record_id
-      has_one "current_#{state_class.state_name}_state".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
+      unless reflect_on_association(state_class.state_name.pluralize.to_sym).present?
+        has_many "#{state_class.state_name}_states".to_sym, class_name: state_class.name, foreign_key: :record_id
+        has_one "current_#{state_class.state_name}_state".to_sym, -> { where.not(effective_at: nil).where(state: "approved").where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) }, class_name: state_class.name, foreign_key: :record_id
+      end
+      subclasses.each do |sub|
+        sub.define_state_relation(state_class)
+      end
     end
 
     def attributes_use_default_asset_config

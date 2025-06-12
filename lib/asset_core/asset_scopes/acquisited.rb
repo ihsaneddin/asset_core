@@ -5,6 +5,7 @@ module AssetCore
       extend AssetCore::AssetScopes::Entry
 
       define_entry_scope :acquisition do
+        requires([:quantifiable, :valuable])
         functions.setup(
           **{
             acquisition_method: proc {

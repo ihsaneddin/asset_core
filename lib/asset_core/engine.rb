@@ -11,7 +11,7 @@ module AssetCore
     config.to_prepare do
       unless Rails.env.production?
         Dir.glob(AssetCore::Engine.root.join("app/models/asset_core/**/*.rb")).each do |file|
-          require_dependency file
+          require_dependency file rescue nil
         end
       end
     end

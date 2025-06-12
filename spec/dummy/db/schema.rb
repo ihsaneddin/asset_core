@@ -170,6 +170,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_08_162746) do
     t.string "number"
     t.date "date"
     t.decimal "amount", precision: 10, scale: 6
+    t.integer "quantity", default: 1
+    t.decimal "total_amount", precision: 10, scale: 6
     t.string "currency", default: "RM"
     t.text "description"
     t.datetime "created_at", null: false

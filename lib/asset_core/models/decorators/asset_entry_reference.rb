@@ -17,8 +17,6 @@ module AssetCore
 
         def self.default_options
           {
-            number: nil,
-            description: nil,
             data: {},
             sync_data: 'none', # options are none, async, sync
           }
@@ -97,16 +95,12 @@ module AssetCore
 
           def set_asset_entry_data
             self.asset_entry_data = {
-              number: asset_entry_reference_config_number,
-              description: asset_entry_reference_config_description,
               data: asset_entry_reference_config_data
             }
           end
 
           def asset_entry_data_changes?
             current_asset_entry_data = {
-              number: asset_entry_reference_config_number,
-              description: asset_entry_reference_config_description,
               data: asset_entry_reference_config_data
             }
             !(Hashdiff.diff(current_asset_entry_data, asset_entry_data).empty?)

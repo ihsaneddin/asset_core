@@ -4,11 +4,11 @@ module AssetCore
       module AssetEntryScopes
 
         mattr_accessor :entry_scopes_classes
-        @@entry_scopes_classes = []
+        @@entry_scopes_classes = {}
 
         def self.add_entry_class_to_scope key, klass
-          @@entry_scopes_classes[scope.to_sym] ||= []
-          @@entry_scopes_classes[scope.to_sym] << klass
+          @@entry_scopes_classes[key.to_sym] ||= []
+          @@entry_scopes_classes[key.to_sym] << klass
         end
 
         def self.get_entry_class_with_scopes *_scopes
@@ -26,27 +26,42 @@ module AssetCore
 
         module ClassMethods
 
-          def define_entry_asset_entry_scopes *args, &block
-            return if args.blank?
-            scopes = args.map(&:to_sym)
-            scopes_config = ::AssetCore.config.asset_entry_scopes.entry_scopes.dup
+          def set_asset_entry_scopes_opts *scopes
+            scopes_config = ::AssetCore.config.asset_scopes.entry_scopes.dup
             opts = {}
             scopes.each do |scp|
               raise "Scope #{scp} not found" unless scopes_config.exists?(scp)
               cfg = scopes_config.send(scp).dup
               opts[scp.to_sym] = cfg.dup
-              cfg.requires.each do |required_scope|
-                raise "Scope #{scp} not found" unless scopes_config.exists?(required_scope)
-                opts[required_scope] = scopes_config.send(required_scope).dup
+              unless cfg.requires.empty?
+                opts = opts.merge(set_asset_entry_scopes_opts(*cfg.requires))
               end
             end
+            opts
+          end
+
+          def define_asset_entry_scopes *args, &block
+            return if args.blank?
+            scopes = args.map(&:to_sym)
+            opts = set_asset_entry_scopes_opts(*scopes)
+            # scopes.each do |scp|
+            #   raise "Scope #{scp} not found" unless scopes_config.exists?(scp)
+            #   cfg = scopes_config.send(scp).dup
+            #   opts[scp.to_sym] = cfg.dup
+            #   cfg.requires.each do |required_scope|
+            #     raise "Scope #{scp} not found" unless scopes_config.exists?(required_scope)
+            #     scopes << required_scope.to_sym
+            #     opts[required_scope.to_sym] = scopes_config.send(required_scope).dup
+            #   end
+            # end
+
+            scopes = opts.keys
             config = plugins_config.setup(self, 'asset_entry_scopes_config', opts, opts.dup.slice(*scopes), &block)
 
             self.asset_entry_scopes= config.values.keys.map(&:to_sym)
 
             self.asset_entry_scopes.each do |asset_scope|
-              ::AssetCore::Models::Decorators:AssetEntryScopes.add_entry_class_to_scope(asset_scope, self.name)
-              apply_asset_entry_scope(asset_entry_scopes_config.values[asset_scope])
+              ::AssetCore::Models::Decorators::AssetEntryScopes.add_entry_class_to_scope(asset_scope, self.name)
 
               if asset_entry_scopes_config.send(asset_scope).exists?(:callbacks)
                 asset_entry_scopes_config.send(asset_scope).callbacks.values.each do |callback, v|
@@ -82,28 +97,27 @@ module AssetCore
                 end
               end
               if asset_entry_scopes_config.send(asset_scope).exists?(:attributes)
-
                 asset_entry_scopes_config.send(asset_scope).attributes.each do |att|
                   if att.is_a?(Hash)
                     att.each do |k, opts|
-                      args = []
-                      args << k
-                      args << opts.delete(:type)
-                      args << opts
-                      validation = opts.delete(:validates)
-                      unless attribute_types.key?(attr_key.to_s)
-                        attribute(*args)
+                      att_name = k
+                      att_type = opts.delete(:type) || :string
+                      validation = opts.delete(:validates) || {}
+                      unless attribute_types.key?(k.to_s)
+                        attribute(att_name, att_type, **opts)
                       end
-                      validates(k, **validation)
+                      validates(k, **validation) unless validation.empty?
                     end
                   elsif att.is_a?(String) || att.is_a?(Symbol)
-                    unless attribute_types.key?(attr_key.to_s)
-                      attribute attr_key
+                    unless attribute_types.key?(att.to_s)
+                      attribute att, :string
                     end
                   end
                 end
               end
             end
+
+            include(AssetEntryScopesCallbacks) unless include?(AssetEntryScopesCallbacks)
           end
 
           def included_in_scopes?(*scopes)
@@ -112,12 +126,12 @@ module AssetCore
           end
 
           def get_classes_with_scopes *scopes
-            ::AssetCore::Models::Decorators:AssetEntryScopes.get_entry_class_with_scopes(*scopes).select{|klass| klass.constantize.base_class == self.base_class }
+            ::AssetCore::Models::Decorators::AssetEntryScopes.get_entry_class_with_scopes(*scopes).select{|klass| klass.constantize.base_class == self.base_class }
           end
 
         end
 
-        module EntryScopes
+        module AssetEntryScopesCallbacks
           extend ActiveSupport::Concern
 
           included do
@@ -132,7 +146,7 @@ module AssetCore
                 send(callback) do
                   self.class.asset_entry_scopes.each do |scp|
                     record.entries_callbacks_for_scope(scp).each do |entry_callback|
-                      entry_callback.send(callback, self) if entry_callback.exist?(callback)
+                      entry_callback.send(callback, self) if entry_callback.exists?(callback)
                     end
                   end
                 end

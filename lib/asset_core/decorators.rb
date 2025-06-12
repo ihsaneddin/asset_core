@@ -49,8 +49,12 @@ module AssetCore
       ::AssetCore::Models::Decorators::AssetEntryScopes
     end
 
-    def self.asset_entry_type
+    def self.asset_type
       ::AssetCore::Models::Decorators::AssetType
+    end
+
+    def self.asset_type_methods
+      ::AssetCore::Models::Decorators::AssetType::InstanceMethods
     end
 
   end
