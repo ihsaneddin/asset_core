@@ -22,6 +22,9 @@ module AssetCore
           base.include ::Plugins::Models::Concerns::Options::InheritableClassAttribute
           base.inheritable_class_attribute :asset_entry_scopes
           base.extend ClassMethods
+          base.scope :with_entry_scopes, -> (*scopes) {
+            base_class.where(type: get_classes_with_scopes(*scopes))
+          }
         end
 
         module ClassMethods
@@ -44,22 +47,10 @@ module AssetCore
             return if args.blank?
             scopes = args.map(&:to_sym)
             opts = set_asset_entry_scopes_opts(*scopes)
-            # scopes.each do |scp|
-            #   raise "Scope #{scp} not found" unless scopes_config.exists?(scp)
-            #   cfg = scopes_config.send(scp).dup
-            #   opts[scp.to_sym] = cfg.dup
-            #   cfg.requires.each do |required_scope|
-            #     raise "Scope #{scp} not found" unless scopes_config.exists?(required_scope)
-            #     scopes << required_scope.to_sym
-            #     opts[required_scope.to_sym] = scopes_config.send(required_scope).dup
-            #   end
-            # end
-
             scopes = opts.keys
             config = plugins_config.setup(self, 'asset_entry_scopes_config', opts, opts.dup.slice(*scopes), &block)
 
             self.asset_entry_scopes= config.values.keys.map(&:to_sym)
-
             self.asset_entry_scopes.each do |asset_scope|
               ::AssetCore::Models::Decorators::AssetEntryScopes.add_entry_class_to_scope(asset_scope, self.name)
 
@@ -126,7 +117,7 @@ module AssetCore
           end
 
           def get_classes_with_scopes *scopes
-            ::AssetCore::Models::Decorators::AssetEntryScopes.get_entry_class_with_scopes(*scopes).select{|klass| klass.constantize.base_class == self.base_class }
+            ::AssetCore::Models::Decorators::AssetEntryScopes.get_entry_class_with_scopes(*scopes)#.select{|klass| klass.constantize.base_class == self.base_class }
           end
 
         end

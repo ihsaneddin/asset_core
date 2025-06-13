@@ -13,7 +13,7 @@ module AssetCore
     self.table_name = 'asset_core_entries'
 
     class_attribute :entry_name
-    self.entry_name = name.demodulize.underscore
+    # self.entry_name = name.demodulize.underscore
 
     belongs_to :record, class_name: "AssetCore::Record", foreign_key: :record_id, optional: true
     belongs_to :previous_entry, class_name: "AssetCore::Entry", foreign_key: :previous_entry_id, optional: true
@@ -136,9 +136,13 @@ module AssetCore
       @reference_config_options || {}
     end
 
+    def self.set_entry_name(_name = nil)
+      self.entry_name = _name || self.name.demodulize.underscore
+    end
+
     def self.inherited(subclass)
       super(subclass)
-      subclass.entry_name= subclass.name.demodulize.underscore
+      subclass.set_entry_name
       @entry_names ||= Set.new
       if @entry_names.include?(subclass.entry_name)
         raise ArgumentError, "Duplicate entry_name '#{name}' detected for #{subclass}"
@@ -194,9 +198,12 @@ module AssetCore
     end
 
     before_create do
-      if self.class.with_record(record_id).exists?
-        prev_entry = self.class.with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+      if ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).exists?
+        prev_entry = ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
         self.previous_entry = prev_entry
+      # if self.class.with_record(record_id).exists?
+      #   prev_entry = self.class.with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+      #   self.previous_entry = prev_entry
       else
         self.initial= true
         approve
@@ -205,7 +212,8 @@ module AssetCore
 
     before_save do
       if previous_entry_id.blank? && effective_at.present?
-        prev_entry = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
+        prev_entry = ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+        #prev_entry = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
         self.previous_entry = prev_entry
       end
     end

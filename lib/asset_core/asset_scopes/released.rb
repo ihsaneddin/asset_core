@@ -50,11 +50,7 @@ module AssetCore
         entry_callbacks.setup(
           **{
             before_validation: nil,
-            validate: proc { |entry|
-              if entries.by_entry_scopes("release").where.not(id: entry.id).exists?
-                entry.errors.add(:type, :invalid)
-              end
-            },
+            validate: nil,
             after_validation: nil,
             before_save: nil,
             after_save: proc { |entry|
@@ -82,7 +78,7 @@ module AssetCore
               release_entry&.release_method
             },
             release_methods: proc {
-              %w[sale donation scrap write_off]
+              %w[sale donation scrap write_off returned_to_owner repossessed foreclosed]
             },
             gain_or_loss: proc {
               if release_method.present?

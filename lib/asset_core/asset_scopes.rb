@@ -33,6 +33,7 @@ module AssetCore
         before_save: nil,
         after_save: nil,
       },
+      requires: [],
       proxy: nil
     }
 

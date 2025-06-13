@@ -5,7 +5,7 @@ module AssetCore
     include ::Plugins::Models::Concerns::PolymorphicAlternative
     include ::Plugins::Models::Concerns::CustomAttributes
 
-    custom_attributes_definition :data, ::AssetCore::Attributes
+    custom_attributes_definition :data, ::AssetCore::Attributes, accessor: true
 
     self.table_name = 'asset_core_states'
 
@@ -134,8 +134,6 @@ module AssetCore
         ref_data = reference.asset_state_reference_config.data || {}
         hash[:index] = ref_data[:index]
         hash[:remark] = ref_data[:remark]
-        hash[:index] ||= reference.asset_state_reference_config.index
-        hash[:remark] ||= reference.asset_state_reference_config.remark
         data_class = self.class.attribute_types['data'].model_klass
         data_class.assignable_attributes.each do |att|
           hash[att.to_sym] = ref_data[att.to_sym]

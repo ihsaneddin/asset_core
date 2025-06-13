@@ -32,6 +32,7 @@ end
 #create asset record
 asset = Asset.create(owner: company, name: "Asset #1")
 #asset.update(asset_record_attributes: {  })
+asset.asset.states.ownership.current
 asset.create_asset_record
 
 #create asset purchase entry using invoice
@@ -64,15 +65,23 @@ purchase = asset.asset_record.purchase_entries.create(
     description: "Purchase of a thing"
   )
 )
-debugger
+
 unless purchase.persisted?
+  raise "Test failed"
+end
+
+unless asset.asset.states.ownership.current&.state_name != "owned"
   raise "Test failed"
 end
 
 inv = Invoice.first
 inv.update(amount:200)
 
-debugger
+purchase.reload
+
+unless purchase.total_value == 200.to_d
+  raise "Test failed"
+end
 
 #should fail purchase entry for asset
 donation = asset.asset_record.purchase_entries.create(
@@ -94,18 +103,34 @@ depreciation = asset.asset_record.depreciation_entries.create(
   residual_value: 5,
   rate: 0.2
 )
-debugger
+unless depreciation.persisted?
+  raise "Test failed"
+end
+
 asset.asset_record.net_book_value( Date.today + 1.year).to_s
 asset.asset.net_book_value(Date.today + 1.year)
 
 release = asset.asset_record.release_entries.create(
-  data_attributes: {
-    release_methods: "sale",
-    release_value: 50,
-    reason: nil,
-  }
+  release_method: "sale",
+  reason: nil,
+)
+
+unless release .persisted?
+  raise "Test failed"
+end
+
+unless asset.asset.states.ownership.current&.state_name != "released"
+  raise "Test failed"
+end
+
+new_asset = Asset.create(owner: company, name: "Asset #2")
+new_asset.create_asset_record
+debugger
+custody_in = new_asset.asset_record.custody_in_entries.create(
+  owner_name: "Any",
+  owner_address: "Bandung",
+  owner_contact: "2312313"
 )
 
 debugger
-
-company
+custody_in

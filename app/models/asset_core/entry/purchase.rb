@@ -10,8 +10,6 @@ module AssetCore
             remark: description,
             custodian_name: record&.asset&.owner&.try(:asset_owner_name),
             custodian_address: record&.asset&.owner&.try(:asset_owner_address),
-            start_date: created_at || Date.today,
-            end_date: nil
           }
         end
       end

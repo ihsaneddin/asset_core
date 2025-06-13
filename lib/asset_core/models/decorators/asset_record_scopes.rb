@@ -26,20 +26,35 @@ module AssetCore
 
         module ClassMethods
 
-          def define_asset_record_scopes *args, &block
-            return if args.blank?
-            scopes = args.map(&:to_sym)
+          def set_asset_record_scopes_opts *scopes
             scopes_config = ::AssetCore.config.asset_scopes.record_scopes.dup
             opts = {}
-            scopes.each do |scp|
+            scopes.map(&:to_sym).each do |scp|
               raise "Scope #{scp} not found" unless scopes_config.exists?(scp)
               cfg = scopes_config.send(scp).dup
               opts[scp.to_sym] = cfg.dup
+              unless cfg.requires.empty?
+                opts = opts.merge(set_asset_record_scopes_opts(*cfg.requires))
+              end
             end
+            opts
+          end
+
+          def define_asset_record_scopes *args, &block
+            return if args.blank?
+            scopes = args.map(&:to_sym)
+            opts = set_asset_record_scopes_opts(*scopes)
+            scopes = opts.keys
+            # scopes_config = ::AssetCore.config.asset_scopes.record_scopes.dup
+            # opts = {}
+            # scopes.each do |scp|
+            #   raise "Scope #{scp} not found" unless scopes_config.exists?(scp)
+            #   cfg = scopes_config.send(scp).dup
+            #   opts[scp.to_sym] = cfg.dup
+            # end
             config = plugins_config.setup(self, 'asset_record_scopes_config', opts, opts.dup.slice(*scopes), &block)
 
             self.asset_record_scopes= config.values.keys.map(&:to_sym)
-
             self.asset_record_scopes.each do |asset_scope|
               ::AssetCore::Models::Decorators::AssetRecordScopes.add_record_class_to_scope(asset_scope, self.name)
               if asset_record_scopes_config.send(asset_scope).exists?(:callbacks)

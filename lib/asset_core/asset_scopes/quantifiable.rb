@@ -11,7 +11,7 @@ module AssetCore
               type: :string,
               validates: {
                 inclusion: {
-                  in: proc{ |entry| entry.quantity_unit_group&.units&.map{|u|[:name]} || [] }
+                  in: proc{ |entry| entry.quantity_unit_group&.units&.map{|u| u[:name]} || [] }
                 }
               }
             },

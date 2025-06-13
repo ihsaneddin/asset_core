@@ -22,7 +22,7 @@ module AssetCore
               type: :decimal,
               default: 0,
               validates: {
-                numericality: { greater_than: 0 }
+                numericality: { greater_than_or_equal_to: 0 }
               }
             },
           ]

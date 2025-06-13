@@ -9,7 +9,20 @@ module AssetCore
 
     custom_attributes_definition :data, Attributes, accessor: true
 
-    define_asset_type :single, scopes: [ :acquisited, :purchased, :donated, :depreciated, :released ] do
+    define_asset_type :single, scopes: [ :acquisited, :purchased, :donated, :depreciated, :custodied_in, :released ] do
+      acquisited do
+        entry_callbacks do
+          before_validation do |entry|
+            entry.quantity = 1
+            entry.quantity_unit = asset.asset_config.quantity_unit_group.base_unit
+          end
+          validate do |entry|
+            if entries.by_entry_scopes("acquisition").where.not(id: entry.id).exists?
+              entry.errors.add(:type, :invalid)
+            end
+          end
+        end
+      end
       depreciated do
         functions do
           initial_value do
@@ -25,6 +38,27 @@ module AssetCore
         entry_callbacks do
           before_validation do |entry|
             entry.start_date ||= acquisition_date
+          end
+        end
+      end
+      released do
+        entry_callbacks do
+          before_validation do |entry|
+            entry.quantity = 1
+            entry.quantity_unit = asset.asset_config.quantity_unit_group.base_unit
+          end
+          validate do |entry|
+            if entries.by_entry_scopes("release").where.not(id: entry.id).exists?
+              entry.errors.add(:type, :invalid)
+            end
+          end
+        end
+      end
+      custodied do
+        entry_callbacks do
+          before_validation do |entry|
+            entry.quantity = 1
+            entry.quantity_unit = asset.asset_config.quantity_unit_group.base_unit
           end
         end
       end

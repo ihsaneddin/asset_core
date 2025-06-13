@@ -5,13 +5,14 @@ module AssetCore
       self.protected_attributes = [:owned]
 
       attribute :owned, :boolean
-      attribute :custodian_name
-      attribute :custodian_address
-      attribute :start_date, :date
-      attribute :end_date, :date
 
-      validates :start_date, timeliness: { type: :date }, allow_blank: true
-      validates :end_date, timeliness: { type: :date }, allow_blank: true
+      attribute :custodian_name, :string
+      attribute :custodian_address, :string
+      attribute :custodian_contact, :string
+
+      attribute :counterparty_name, :string
+      attribute :counterparty_address, :string
+      attribute :counterparty_contact, :string
 
     end
 
@@ -27,12 +28,15 @@ module AssetCore
       { name: "loaned_out",   label: "Loaned Out",   owned: true  },
       { name: "mortgage_in",  label: "Mortgage In",  owned: true  },
       { name: "mortgage_out", label: "Mortgage Out", owned: false },
-      { name: "released",     label: "Released",     owned: false }
+      { name: "custody_in",   label: "Custody in",   owned: false },
+      { name: "released",     label: "Released",     owned: false },
     ]
 
     before_save do
       if state_value[:owned]
         self.data.owned = true
+      else
+        self.data.owned = false
       end
     end
 
