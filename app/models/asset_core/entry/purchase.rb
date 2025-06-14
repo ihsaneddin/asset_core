@@ -13,16 +13,6 @@ module AssetCore
           }
         end
       end
-
-      asset_entry_reference do
-        data do
-          {
-            number: SecureRandom.hex(8),
-            description: description,
-          }
-        end
-      end
-
     end
 
 

@@ -27,7 +27,6 @@ module AssetCore
           def asset_entry_reference **opts, &block
             return unless ActiveRecord::Base.connection.table_exists?('asset_core_entries')
             default_opts = AssetCore::Models::Decorators::AssetEntryReference.default_options
-
             plugins_config.setup(self, 'asset_entry_reference_config', opts, default_opts, &block)
 
             unless reflect_on_association(:asset_entries)
@@ -44,7 +43,7 @@ module AssetCore
               define_entry_subclass_relation sub
             end
 
-            include InstanceMethods unless include?(InstanceMethods)
+            include InstanceMethods #unless include?(InstanceMethods)
             include SyncCallbacks unless include?(SyncCallbacks)
 
             ::AssetCore::Models::Decorators::AssetEntryReference << self

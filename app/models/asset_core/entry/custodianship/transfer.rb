@@ -8,12 +8,22 @@ module AssetCore
           {
             index: record.current_ownership_state&.index || ::AssetCore::State::Ownership.states_list.index{ |state| state[:name] == "owned" },
             remark: description,
-            custodian_name: custodion_name,
+            custodian_name: custodian_name,
             custodian_address: custodian_address
           }
         end
       end
+      asset_entry_reference do
+        data do |entry|
+          {
+            number: SecureRandom.hex(8),
+            description: description,
+            address: custodian_address
+          }
+        end
+      end
     end
+
 
     class Attributes < ::AssetCore::Entry::Custody::Attributes
 

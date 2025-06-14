@@ -131,7 +131,7 @@ module AssetCore
       return @reference_config_options if @reference_config_options
       if reference && valid_reference?
         hash = {}
-        ref_data = reference.asset_state_reference_config.data || {}
+        ref_data = reference.asset_state_reference_config_data(self) || {}
         hash[:index] = ref_data[:index]
         hash[:remark] = ref_data[:remark]
         data_class = self.class.attribute_types['data'].model_klass

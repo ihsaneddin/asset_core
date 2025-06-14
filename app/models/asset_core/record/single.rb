@@ -9,7 +9,7 @@ module AssetCore
 
     custom_attributes_definition :data, Attributes, accessor: true
 
-    define_asset_type :single, scopes: [ :acquisited, :purchased, :donated, :depreciated, :custodied_in, :released ] do
+    define_asset_type :single, scopes: [ :acquisited, :purchased, :donated, :depreciated, :custodied_in, :located, :released, :custody_transfer ] do
       acquisited do
         entry_callbacks do
           before_validation do |entry|
@@ -18,7 +18,7 @@ module AssetCore
           end
           validate do |entry|
             if entries.by_entry_scopes("acquisition").where.not(id: entry.id).exists?
-              entry.errors.add(:type, :invalid)
+              entry.errors.add(:acquisition, :invalid)
             end
           end
         end
@@ -49,7 +49,7 @@ module AssetCore
           end
           validate do |entry|
             if entries.by_entry_scopes("release").where.not(id: entry.id).exists?
-              entry.errors.add(:type, :invalid)
+              entry.errors.add(:release, :invalid)
             end
           end
         end

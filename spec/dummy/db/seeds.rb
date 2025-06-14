@@ -125,11 +125,16 @@ end
 
 new_asset = Asset.create(owner: company, name: "Asset #2")
 new_asset.create_asset_record
-debugger
+
 custody_in = new_asset.asset_record.custody_in_entries.create(
   owner_name: "Any",
   owner_address: "Bandung",
   owner_contact: "2312313"
+)
+
+custody_transfer = new_asset.asset_record.custody_transfer_entries.create(
+  custodian_name: "Any",
+  custodian_address: "Bandung",
 )
 
 debugger

@@ -119,12 +119,10 @@ module AssetCore
       return @reference_config_options if @reference_config_options
       if reference && valid_reference?
         hash = {}
-        ref_data = reference.asset_entry_reference_config.data || {}
+        ref_data = reference.asset_entry_reference_config_data(self) || {}
         data_class = self.class.attribute_types['data'].model_klass
         hash[:number] = ref_data[:index]
         hash[:description] = ref_data[:remark]
-        hash[:number] ||= reference.asset_entry_reference_config.data[:number]
-        hash[:description] ||= reference.asset_entry_reference_config.data[:description]
         data_class.assignable_attributes.each do |att|
           hash[att.to_sym] = ref_data[att.to_sym]
           if att.to_sym == :currency
@@ -198,12 +196,12 @@ module AssetCore
     end
 
     before_create do
-      if ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).exists?
-        prev_entry = ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
-        self.previous_entry = prev_entry
-      # if self.class.with_record(record_id).exists?
-      #   prev_entry = self.class.with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+      # if ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).exists?
+      #   prev_entry = ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
       #   self.previous_entry = prev_entry
+      if self.class.with_record(record_id).exists?
+        prev_entry = self.class.with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+        self.previous_entry = prev_entry
       else
         self.initial= true
         approve
@@ -212,8 +210,8 @@ module AssetCore
 
     before_save do
       if previous_entry_id.blank? && effective_at.present?
-        prev_entry = ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
-        #prev_entry = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
+        #prev_entry = ::AssetCore::Entry.with_entry_scopes(*self.class.asset_entry_scopes).with_record(record_id).approved.effective_before(DateTime.now).order(effective_at: :desc).first
+        prev_entry = self.class.with_record(record_id).approved.effective_before(effective_at).order(effective_at: :desc).first
         self.previous_entry = prev_entry
       end
     end

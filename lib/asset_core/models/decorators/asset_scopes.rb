@@ -78,7 +78,7 @@ module AssetCore
             with_options if: :record do
               validate do
                 unless (record.class.asset_scopes && self.class.asset_scopes).any?
-                  errors.add(:invalid, :type)
+                  errors.add(:type, :invalid)
                 end
               end
               [:before_validation, :validate, :after_validation, :before_save, :after_save].each do |callback|

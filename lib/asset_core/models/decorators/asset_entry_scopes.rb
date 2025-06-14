@@ -84,6 +84,7 @@ module AssetCore
                     _scope = nil
                     _scope = builder[1] if builder[1].is_a?(Proc)
                     send(relation, rname, _scope, **options)
+                    accepts_nested_attributes_for relation, allow_destroy: true, reject_if: :allow_blank
                   end
                 end
               end
@@ -130,7 +131,7 @@ module AssetCore
             with_options if: :record do
               validate do
                 unless (record.entries_scopes.map(&:to_s) && self.class.asset_entry_scopes.map(&:to_s)).any?
-                  errors.add(:invalid, :type)
+                  errors.add(:type, :invalid)
                 end
               end
               [:before_validation, :validate, :after_validation, :before_save, :after_save].each do |callback|

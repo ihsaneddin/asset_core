@@ -42,12 +42,6 @@ module AssetCore
         entry_scopes([:custodianship])
         relationships.setup(
           **{
-            custodianship_entry: [
-              :has_one,
-              -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:custodianship)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) },
-              class_name: "AssetCore::Entry",
-              foreign_key: :record_id
-            ],
             custodianship_entries: [
               :has_many,
               -> { where.not(effective_at: nil).where(state: "approved", type: ::AssetCore::Entry.get_classes_with_scopes(:custodianship)).where("effective_at <= ? ", DateTime.now).order(effective_at: :desc) },
@@ -203,7 +197,7 @@ module AssetCore
         define_record_scope :custody_transfer do
           proxy "custody_transfer"
           requires([:custodied])
-          entry_scopes([:custody_in])
+          entry_scopes([:custody_transfer])
           relationships.setup(
             **{
               custody_transfer_entry: [
@@ -227,11 +221,8 @@ module AssetCore
               after_validation: nil,
               before_save: nil,
               after_save: proc { |entry|
-                if entry.state == "approved" && entry.saved_change_to_state?
-                  if asset
-                    asset_state = entry.asset_ownership_states.new( record: self , use_reference_data: true)
-                    asset_state.save
-                  end
+                if created_at == updated_at
+                  location_entries.create(reference: entry, use_reference_data: true)
                 end
               }
             }
