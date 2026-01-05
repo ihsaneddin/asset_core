@@ -14,8 +14,8 @@ module AssetCore
         module HelperMethods
 
           def authorize!(*args)
-            if self.class.api_config.authorize.is_a?(Proc)
-              instance_exec(*args ,&self.class.api_config.authorize )
+            if self.class_context.api_config.authorize.is_a?(Proc)
+              instance_exec(*args ,&self.class_context.api_config.authorize )
             else
               current_ability.authorize!(*args)
             end
